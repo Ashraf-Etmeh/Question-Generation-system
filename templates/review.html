@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% set nav_active = 'quizzes' %}
+{% block title %}Review · {{ quiz.title }}{% endblock %}
+
+{% macro kind_of(question) -%}
+{%- if question.type == 'Free-Response' -%}Written answer
+{%- elif '__________' in question.question -%}Fill in the blank
+{%- else -%}Multiple choice{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+{% set flagged = quiz.questions | selectattr('flags') | list | length %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Quizzes</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">{{ quiz.title }}</span>
+</nav>
+
+<div class="page-head">
+  <div>
+    <h1>Review questions</h1>
+    <p class="lede">Draft · {{ GENERATORS.get(quiz.generator, 'Quiz') }} · {{ quiz.questions | length }} question{{ '' if quiz.questions | length == 1 else 's' }}{% if quiz.pass_mark %} · pass mark {{ quiz.pass_mark }}%{% endif %} · {{ quiz.source }}</p>
+  </div>
+  <form method="post" action="{{ url_for('publish_quiz', quiz_id=quiz.id) }}" onsubmit="return confirm('Publish this quiz? Its questions can no longer be changed after this.');">
+    <button type="submit" class="btn btn-primary">Publish</button>
+  </form>
+</div>
+
+<div class="notice">
+  {{ icons.info(20) }}
+  <span>Questions are written automatically. Check each one against its passage from {{ quiz.doc_title }} before you publish{% if flagged %}; {{ flagged }} {{ 'is' if flagged == 1 else 'are' }} marked to check{% endif %}. Once published, questions are fixed and the answer key stays hidden until the quiz is submitted.</span>
+</div>
+
+<div class="two-column">
+  <aside class="side-column">
+    <nav class="card question-nav" aria-label="Questions">
+      <ol>
+        {% for question in quiz.questions %}
+        <li>
+          <a href="#q-{{ question.qid }}" {% if question.flags %}style="background: var(--warn-tint);"{% endif %}>
+            <span class="nav-number">{{ loop.index }}</span>
+            <span class="nav-label">{{ kind_of(question) }}</span>
+            {% if question.flags %}<span class="chip chip-amber">To check</span>{% endif %}
+          </a>
+        </li>
+        {% endfor %}
+      </ol>
+    </nav>
+
+    <section class="card stack" aria-labelledby="spares-heading">
+      <h2 id="spares-heading" style="font-size: 16px; line-height: 24px;">Spare questions · {{ quiz.spares | length }}</h2>
+      {% if quiz.spares %}
+      <p class="hint">Extra questions from the same document. Add one, or swap it in for a question you don't want.</p>
+      <ul class="spare-list">
+        {% for spare in quiz.spares %}
+        <li class="spare">
+          <span class="question-kind">{{ kind_of(spare) }}</span>
+          <span class="spare-text">{{ spare.question }}</span>
+          <form method="post" action="{{ url_for('add_spare', quiz_id=quiz.id, qid=spare.qid) }}">
+            <button type="submit" class="btn btn-secondary btn-small">{{ icons.plus(16) }}Add to quiz</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="hint">None left. Questions you remove are kept here, so you can add them back.</p>
+      {% endif %}
+    </section>
+  </aside>
+
+  <div class="main-column">
+    {% for question in quiz.questions %}
+    {% set number = loop.index %}
+    {% set is_free = question.type == 'Free-Response' %}
+    <article class="card question-card stack {% if question.flags %}is-flagged{% endif %}" id="q-{{ question.qid }}" style="scroll-margin-top: 24px;" aria-labelledby="q-{{ question.qid }}-title">
+      <div class="question-head">
+        <h2 class="question-kind" id="q-{{ question.qid }}-title">Question {{ number }} · {{ kind_of(question) }}</h2>
+        {% if question.flags %}<span class="chip chip-amber">{{ icons.alert() }}To check</span>{% endif %}
+      </div>
+
+      {% for category, message in get_flashed_messages(with_categories=true) if category.endswith(' q-' ~ question.qid) %}
+      {% set kind = category.split(' ')[0] %}
+      <div class="notice notice-{{ kind }}" role="{{ 'alert' if kind == 'error' else 'status' }}">
+        {% if kind == 'error' %}{{ icons.alert(20) }}{% else %}{{ icons.check(20) }}{% endif %}<span>{{ message }}</span>
+      </div>
+      {% endfor %}
+
+      {% if question.flags %}
+      <ul class="flag-reasons">
+        {% for reason in question.flags %}<li>{{ reason }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+
+      <form class="stack" method="post" action="{{ url_for('save_question', quiz_id=quiz.id, qid=question.qid) }}">
+        <div class="field">
+          <label for="q-{{ question.qid }}-text">Question</label>
+          <textarea class="textarea textarea-serif" id="q-{{ question.qid }}-text" name="question" rows="3" required>{{ question.question }}</textarea>
+        </div>
+
+        {% if is_free %}
+        <div class="field">
+          <label for="q-{{ question.qid }}-answer">Reference answer, used for grading</label>
+          <textarea class="textarea textarea-serif" id="q-{{ question.qid }}-answer" name="answer" rows="4" required>{{ question.answer }}</textarea>
+          <span class="hint">Employees' written answers are compared with this by meaning, not exact wording.</span>
+        </div>
+        <div class="field" style="max-width: 360px;">
+          <label for="q-{{ question.qid }}-strictness">Marking</label>
+          <select class="select" id="q-{{ question.qid }}-strictness" name="strictness">
+            {% for key, choice in STRICTNESS.items() %}
+            <option value="{{ key }}" {% if key == question.get('strictness', 'standard') %}selected{% endif %}>{{ choice[0] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% else %}
+        <fieldset class="stack" style="gap: 8px;">
+          <legend class="label" style="margin-bottom: 8px;">Options · select the correct one</legend>
+          {% for option in question.options %}
+          <div class="option-row">
+            <input type="radio" name="correct" value="{{ loop.index0 }}" id="q-{{ question.qid }}-correct-{{ loop.index0 }}" {% if option == question.answer %}checked{% endif %} required aria-label="Option {{ loop.index }} is the correct answer">
+            <input class="input" type="text" name="option-{{ loop.index0 }}" value="{{ option }}" aria-label="Option {{ loop.index }}">
+            <span class="option-hint">Correct answer</span>
+          </div>
+          {% endfor %}
+        </fieldset>
+        {% if question.source_sentence %}
+        <div class="passage">
+          <span class="passage-label">From {{ quiz.doc_title }}</span>
+          <span class="passage-text">{{ question.source_sentence }}</span>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        <div><button type="submit" class="btn btn-primary btn-small">Save changes</button></div>
+      </form>
+
+      <div class="card-tools">
+        <form method="post" action="{{ url_for('remove_question', quiz_id=quiz.id, qid=question.qid) }}">
+          <button type="submit" class="btn btn-secondary btn-small" {% if quiz.questions | length == 1 %}disabled{% endif %}>Remove</button>
+        </form>
+        {% if quiz.spares %}
+        <form method="post" action="{{ url_for('swap_question', quiz_id=quiz.id, qid=question.qid) }}">
+          <label class="visually-hidden" for="q-{{ question.qid }}-spare">Spare to swap in for question {{ number }}</label>
+          <select class="select" id="q-{{ question.qid }}-spare" name="spare">
+            {% for spare in quiz.spares %}
+            <option value="{{ spare.qid }}">{{ spare.question | truncate(60) }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn {{ 'btn-primary' if question.flags else 'btn-secondary' }} btn-small">Swap for this spare</button>
+        </form>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

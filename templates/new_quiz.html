@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% set nav_active = 'quizzes' %}
+{% block title %}New quiz{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Quizzes</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">New quiz</span>
+</nav>
+
+<h1 style="font-size: 32px; line-height: 40px;">New quiz</h1>
+
+{% if error %}
+<div class="notice notice-error" role="alert">
+  {{ icons.alert(20) }}
+  <span><strong>No quiz could be created from this file.</strong> {{ error }}</span>
+</div>
+{% endif %}
+
+<div class="two-column">
+  <form class="card main-column" id="new-quiz-form" method="post" action="{{ url_for('create_quiz') }}" enctype="multipart/form-data" style="gap: 32px;">
+
+    <section class="form-section">
+      <h2>1. Policy document</h2>
+      <label class="dropzone" for="policy-file" id="dropzone">
+        {{ icons.upload() }}
+        <span class="dropzone-title">Drop a PDF or TXT file here</span>
+        <span class="hint">or <span class="dropzone-link">browse your files</span></span>
+        <input class="visually-hidden" id="policy-file" type="file" name="file" accept=".pdf,.txt,application/pdf,text/plain" required>
+      </label>
+      <div class="file-chosen" id="file-chosen" hidden>
+        {{ icons.file() }}
+        <div class="stack-tight" style="flex: 1; min-width: 0; gap: 0;">
+          <span class="file-name" id="file-name"></span>
+          <span class="hint" id="file-size"></span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-small" id="file-clear">Change</button>
+      </div>
+      <p class="hint">The text must be selectable: scanned PDFs need OCR first, and password-protected PDFs can't be read.</p>
+      <div class="field">
+        <label for="quiz-title">Quiz title <span class="hint">(optional)</span></label>
+        <input class="input" id="quiz-title" type="text" name="title" maxlength="120" value="{{ settings.title }}" placeholder="Taken from the file name if left empty">
+      </div>
+    </section>
+
+    <fieldset class="form-section">
+      <legend>2. Question style</legend>
+      <div class="choice-grid">
+        <label class="choice-card">
+          <input type="radio" name="generation_method" value="blank_based" {% if settings.generation_method == 'blank_based' %}checked{% endif %}>
+          <span class="stack-tight" style="gap: 4px;">
+            <span class="choice-title">Fill in the blank</span>
+            <span class="hint">A sentence from the policy with one key phrase removed, and four options.</span>
+          </span>
+        </label>
+        <label class="choice-card">
+          <input type="radio" name="generation_method" value="free_based" {% if settings.generation_method == 'free_based' %}checked{% endif %}>
+          <span class="stack-tight" style="gap: 4px;">
+            <span class="choice-title">Mixed</span>
+            <span class="hint">One written answer graded by meaning, plus multiple-choice questions phrased as real questions.</span>
+          </span>
+        </label>
+      </div>
+    </fieldset>
+
+    <section class="form-section">
+      <h2>3. Settings</h2>
+      <div class="settings-grid">
+        <div class="field">
+          <label for="question-count">Number of questions</label>
+          <select class="select" id="question-count" name="question_count">
+            {% for count in QUESTION_COUNTS %}
+            <option value="{{ count }}" {% if count == settings.question_count %}selected{% endif %}>{{ count }}</option>
+            {% endfor %}
+          </select>
+          <span class="hint">Longer documents support more questions.</span>
+        </div>
+        <div class="field">
+          <label for="pass-mark">Pass mark</label>
+          <select class="select" id="pass-mark" name="pass_mark">
+            {% for mark in PASS_MARKS %}
+            <option value="{{ mark }}" {% if mark == settings.pass_mark %}selected{% endif %}>{{ mark }}%</option>
+            {% endfor %}
+          </select>
+          <span class="hint">Shown to employees before they start.</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary btn-large" id="generate-button">Generate questions</button>
+      <a class="btn btn-secondary btn-large" href="{{ url_for('dashboard') }}">Cancel</a>
+      <span class="hint">Usually takes under 10 seconds. Nothing is shared until you publish.</span>
+    </div>
+  </form>
+
+  <aside class="card side-column">
+    <h2 style="font-size: 16px; line-height: 24px;">What happens next</h2>
+    <ol class="steps-list">
+      <li><span class="step-number">1</span><span class="stack-tight" style="gap: 2px;"><strong>Sentences are picked</strong><span class="hint">Headings, lists and cross-references are skipped.</span></span></li>
+      <li><span class="step-number">2</span><span class="stack-tight" style="gap: 2px;"><strong>You review every question</strong><span class="hint">Fix the wording, change the correct answer, or swap a question for a spare.</span></span></li>
+      <li><span class="step-number">3</span><span class="stack-tight" style="gap: 2px;"><strong>You publish it</strong><span class="hint">After that the questions are fixed and the answer key stays hidden until the quiz is submitted.</span></span></li>
+    </ol>
+  </aside>
+</div>
+
+<div class="busy-overlay" role="status" aria-live="polite">
+  <div class="card busy-card stack">
+    <div class="actions">
+      {{ icons.spinner(28) }}
+      <h2 style="font-size: 22px; line-height: 30px;">Building your quiz</h2>
+    </div>
+    <div class="progress progress-indeterminate" aria-hidden="true"><span></span></div>
+    <ol class="steps-list" style="gap: 10px;">
+      <li class="hint">Reading the document and cleaning up page furniture</li>
+      <li class="hint">Choosing sentences that can carry a question</li>
+      <li class="hint">Writing questions and answer options</li>
+      <li class="hint">Checking every question</li>
+    </ol>
+    <p class="hint">Usually under 10 seconds. Please keep this page open.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/new_quiz.js') }}"></script>
+{% endblock %}

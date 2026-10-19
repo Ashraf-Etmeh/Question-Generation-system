@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% set nav_active = 'quizzes' %}
+{% block title %}Quizzes{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Quizzes</h1>
+    <p class="lede">Drafts stay hidden from employees until you review and publish them.</p>
+  </div>
+</div>
+
+<nav class="filters" aria-label="Filter quizzes">
+  <a class="filter" href="{{ url_for('dashboard') }}" {% if show == 'all' %}aria-current="page"{% endif %}>All · {{ counts.all }}</a>
+  <a class="filter" href="{{ url_for('dashboard', show='draft') }}" {% if show == 'draft' %}aria-current="page"{% endif %}>Drafts · {{ counts.draft }}</a>
+  <a class="filter" href="{{ url_for('dashboard', show='published') }}" {% if show == 'published' %}aria-current="page"{% endif %}>Published · {{ counts.published }}</a>
+</nav>
+
+{% if quizzes %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col">Quiz</th>
+        <th scope="col">Questions</th>
+        <th scope="col">Status</th>
+        <th scope="col" class="num">Score</th>
+        <th scope="col">Created</th>
+        <th scope="col"><span class="visually-hidden">Action</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for quiz in quizzes %}
+      {% set state = quiz_state(quiz) %}
+      {% set to_check = quiz.questions | selectattr('flags') | list | length %}
+      <tr>
+        <td>
+          <div><strong>{{ quiz.title }}</strong></div>
+          <div class="sub">{{ quiz.source }}</div>
+        </td>
+        <td>{{ GENERATORS.get(quiz.generator, 'Quiz') }} · {{ quiz.questions | length }}</td>
+        <td>
+          {% if state == 'draft' and to_check %}
+            <span class="chip chip-amber">{{ icons.alert() }}Draft · {{ to_check }} to check</span>
+          {% elif state == 'draft' %}
+            <span class="chip chip-grey">Draft</span>
+          {% elif state == 'published' %}
+            <span class="chip chip-blue">{{ icons.check() }}Published</span>
+          {% else %}
+            <span class="chip chip-blue">{{ icons.check() }}Completed</span>
+          {% endif %}
+        </td>
+        <td class="num">
+          {% if quiz.result %}{{ quiz.result.score }} / {{ quiz.result.total }}{% else %}<span class="empty">–</span>{% endif %}
+        </td>
+        <td>{{ quiz.created | nice_date }}</td>
+        <td>
+          <a href="{{ quiz_home(quiz) }}"><strong>{{ {'draft': 'Review', 'published': 'Take quiz', 'completed': 'Result'}[state] }}</strong><span class="visually-hidden"> {{ quiz.title }}</span></a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card empty-state">
+  <h2>{% if show == 'all' %}No quizzes yet{% else %}Nothing here{% endif %}</h2>
+  <p class="lede">Upload a policy document and the questions are written for you to review.</p>
+  <a class="btn btn-primary" href="{{ url_for('new_quiz') }}">{{ icons.plus() }}New quiz</a>
+</div>
+{% endif %}
+{% endblock %}

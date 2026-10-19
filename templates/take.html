@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% block title %}{{ quiz.title }}{% endblock %}
+{% block brand %}<span class="brand"><span class="brand-mark">{{ icons.shield() }}</span><span>Onboarding AI</span></span>{% endblock %}
+{% block nav %}{% endblock %}
+{% block main_class %}container-narrow{% endblock %}
+
+{% block content %}
+{% set total = quiz.questions | length %}
+{% set written = quiz.questions | selectattr('type', 'equalto', 'Free-Response') | list | length %}
+<section class="card quiz-intro">
+  <span class="question-kind">Policy check</span>
+  <h1 style="font-size: 28px; line-height: 34px;">{{ quiz.title }}</h1>
+  <ul class="meta-list">
+    <li>{{ icons.list() }}{{ total }} question{{ '' if total == 1 else 's' }}{% if written %}, {{ written }} written answer{{ '' if written == 1 else 's' }}{% endif %}</li>
+    <li>{{ icons.clock() }}About {{ total }} minute{{ '' if total == 1 else 's' }}</li>
+    {% if quiz.pass_mark %}<li>{{ icons.check(20) }}Pass mark {{ quiz.pass_mark }}%</li>{% endif %}
+  </ul>
+  <p class="hint">Answer from what {{ quiz.doc_title }} says. You can go back and change answers until you submit; after that they are final.</p>
+</section>
+
+<form class="card stack" id="quiz-form" method="post" action="{{ url_for('submit_quiz', quiz_id=quiz.id) }}" data-total="{{ total }}">
+  <div class="stack-tight" id="quiz-progress" hidden>
+    <span class="step-count" id="quiz-progress-label" aria-live="polite">Question 1 of {{ total }}</span>
+    <div class="progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="1" aria-valuemax="{{ total }}" aria-valuenow="1"><span style="width: {{ (100 / total) | round(2) }}%"></span></div>
+  </div>
+
+  {% for question in quiz.questions %}
+  <section class="step" data-step="{{ loop.index0 }}" aria-labelledby="{{ question.qid }}-stem">
+    <span class="question-kind">Question {{ loop.index }} of {{ total }} · {{ 'Written answer' if question.type == 'Free-Response' else 'Multiple choice' }}</span>
+    <h2 class="stem" id="{{ question.qid }}-stem">{{ question.question }}</h2>
+    {% if question.type == 'Free-Response' %}
+    <div class="field">
+      <label for="{{ question.qid }}-answer">Your answer</label>
+      <textarea class="textarea" id="{{ question.qid }}-answer" name="{{ question.qid }}" rows="7" required></textarea>
+      <span class="hint">Write it in your own words. It is marked on meaning, not exact wording.</span>
+    </div>
+    {% else %}
+    <fieldset class="stack" style="gap: 10px;">
+      <legend class="visually-hidden">Choose one answer</legend>
+      {% for option in question.options %}
+      <label class="answer-option">
+        <input type="radio" name="{{ question.qid }}" value="{{ option }}" required>
+        <span>{{ option }}</span>
+      </label>
+      {% endfor %}
+    </fieldset>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  <p class="notice notice-error" id="quiz-error" role="alert" hidden></p>
+
+  <div class="stepper-nav">
+    <button type="button" class="btn btn-secondary btn-large" id="quiz-back" hidden>Back</button>
+    <button type="button" class="btn btn-primary btn-large" id="quiz-next" hidden>Next</button>
+    <button type="submit" class="btn btn-primary btn-large" id="quiz-submit">Submit answers</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/take.js') }}"></script>
+{% endblock %}

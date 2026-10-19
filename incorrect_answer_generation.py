@@ -22,7 +22,7 @@ import torch
 from nltk.corpus import wordnet as wn
 from sentence_transformers import util
 
-from candidate_selection import normalise_phrase, strip_determiner
+from candidate_selection import content_key, normalise_phrase, strip_determiner
 from nlp_models import nlp, semantic_model
 
 # Below this the option is obviously wrong and helps by elimination.
@@ -32,6 +32,9 @@ MIN_SIMILARITY = 0.30
 MAX_SIMILARITY = 0.78
 # Distractors must also differ from one another by at least this much.
 MAX_MUTUAL_SIMILARITY = 0.82
+# Two phrases sharing this much of the shorter one's content words name
+# the same thing, whatever the embeddings say.
+MAX_CONTENT_OVERLAP = 0.75
 
 # Suffix rules good enough to tell "policy"/"policies" apart from a real
 # difference in meaning.  A full lemmatiser is not worth a spaCy pass per
@@ -88,7 +91,7 @@ class IncorrectAnswerGenerator:
                                 (candidate.text, candidate.label))
         else:
             for ent in self.doc.ents:
-                text = ent.text.strip()
+                text = strip_determiner(ent.text)
                 if 1 <= len(text.split()) <= 4:
                     pool.setdefault(normalise_phrase(text), (text, ent.label_))
             for chunk in self.doc.noun_chunks:
@@ -161,15 +164,26 @@ class IncorrectAnswerGenerator:
         if _stem_set(cand_norm) == _stem_set(ans_norm):
             return True
 
-        # The answer's head - its last two words - reappearing inside the
-        # candidate means the two phrases name the same thing seen from
-        # different angles: "Law Department's approval" against
-        # "Yum! Law Department".
-        ans_words = ans_norm.split()
-        if len(ans_words) >= 2:
-            head = ' '.join(ans_words[-2:])
-            if head in cand_norm:
+        # Either phrase's head - its last two words - reappearing inside
+        # the other means the two name the same thing seen from different
+        # angles: "Law Department's approval" against "Yum! Law
+        # Department", or "McDonald's Business Integrity" against
+        # "Business Integrity line".
+        for phrase, other in ((ans_norm, cand_norm), (cand_norm, ans_norm)):
+            words = phrase.split()
+            if len(words) >= 2 and ' '.join(words[-2:]) in other:
                 return True
+
+        # Mostly the same content words, reordered or with one extra
+        # qualifier: "employee's regular hourly rate" against "non-exempt
+        # employee's regular rate", "initial employment period" against
+        # "initial period".  Either would be a defensible answer.
+        cand_key, ans_key = content_key(candidate), content_key(answer)
+        shared = len(cand_key & ans_key)
+        if shared >= 2 and (
+                shared / min(len(cand_key), len(ans_key))
+                >= MAX_CONTENT_OVERLAP):
+            return True
 
         return False
 

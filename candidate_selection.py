@@ -138,17 +138,22 @@ def _is_acceptable_phrase(text, lemmas):
     if text.count('(') != text.count(')') or text.count('[') != text.count(']'):
         return False
 
-    # Every content word vacuous -> the phrase tests nothing.
-    content = [lemma for lemma in lemmas if lemma not in ('the', 'a', 'an')]
-    if content and all(lemma in _VACUOUS_WORDS for lemma in content):
+    # Every content word vacuous -> the phrase tests nothing.  The word as
+    # written counts as well as its lemma: spaCy lemmatises "following"
+    # to "follow", which let "following situations" through as an answer.
+    content = [(lemma, word) for lemma, word in lemmas
+               if lemma not in ('the', 'a', 'an')]
+    if content and all(lemma in _VACUOUS_WORDS or word in _VACUOUS_WORDS
+                       for lemma, word in content):
         return False
 
     return True
 
 
 def _phrase_lemmas(span):
+    '''(lemma, word as written) for each content word, lower-cased.'''
     return [
-        token.lemma_.lower()
+        (token.lemma_.lower(), token.lower_)
         for token in span
         if not token.is_stop and not token.is_punct and token.is_alpha
     ]
@@ -199,7 +204,15 @@ def extract_candidates(doc, sentences):
 
     for ent in doc.ents:
         if ent.label_ in INFORMATIVE_LABELS:
-            add(ent, ent.label_)
+            # Entities lose a leading "the" exactly as noun chunks lose
+            # their determiner below.  Mixing the two forms put options
+            # such as "the Audit Committee" next to "product development
+            # group", and the odd one out gave the answer away.  The
+            # article stays in the stem, in front of the blank.
+            span = ent
+            while len(span) > 1 and span[0].pos_ == 'DET':
+                span = span[1:]
+            add(span, ent.label_)
 
     for chunk in doc.noun_chunks:
         # Drop the determiner by re-slicing, so the answer key reads

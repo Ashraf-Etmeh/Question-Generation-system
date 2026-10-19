@@ -5,6 +5,9 @@ __pycache__/
 venv/
 env/
 
+# Server-side quiz records - these hold the answer keys.
+quiz_store/
+
 # Local SBERT model (~90 MB). nlp_models.py falls back to downloading
 # sentence-transformers/all-MiniLM-L6-v2 from the HuggingFace hub.
 models/

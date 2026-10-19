@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% block title %}{{ heading }}{% endblock %}
+{% block main_class %}container-narrow{% endblock %}
+
+{% block content %}
+<section class="card empty-state">
+  <h1 style="font-size: 26px; line-height: 32px;">{{ heading }}</h1>
+  <p class="lede">{{ text }}</p>
+  <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Go to quizzes</a>
+</section>
+{% endblock %}

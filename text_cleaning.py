@@ -26,6 +26,10 @@ This module therefore does two things:
 import re
 import unicodedata
 from collections import Counter
+from functools import lru_cache
+
+from nltk.corpus import wordnet as wn
+from spacy.lang.en.stop_words import STOP_WORDS
 
 # A line is table-of-contents furniture when it carries dot leaders
 # ("Our Commitment to Integrity......5") or is a bare page number.
@@ -104,6 +108,111 @@ def _is_heading(line):
     return upper_ratio > 0.6 or len(words) <= 8
 
 
+# A word followed by a lower-case word, matched with a lookahead so that
+# every neighbouring pair is examined - "Wednesday thro ugh" must still
+# reach "thro ugh".  The lookbehind keeps possessive tails ("'s") out.
+_SPLIT_PAIR = re.compile(r"(?<![\w'’-])([A-Za-z]+) (?=([a-z]+)\b)")
+_NEXT_WORD = re.compile(r' ([a-z]+)\b')
+# WordNet's SemCor frequency above which a word counts as everyday
+# English.  Separates "men" (35) or "web" (3) from dictionary oddities
+# that pypdf fragments happen to spell - "thro", "comp", "th" (all 0).
+_COMMON_WORD_COUNT = 2
+
+# "paid -time-off", "non -exempt": a hyphen that lost its left neighbour.
+_DETACHED_HYPHEN = re.compile(r'(?<=[A-Za-z]) -(?=[A-Za-z])')
+# "Tuesday . Schedules", "Security , Information".
+_SPACE_BEFORE_PUNCT = re.compile(r'(?<=\w) +([,;:.!?])(?=\s|$)')
+
+
+@lru_cache(maxsize=None)
+def _in_dictionary(word):
+    return bool(wn.synsets(word))
+
+
+@lru_cache(maxsize=None)
+def _is_common_word(word):
+    '''Stop word, or a word in everyday use according to WordNet.'''
+    if word in STOP_WORDS:
+        return True
+    base = wn.morphy(word) or word
+    usage = sum(
+        lemma.count()
+        for synset in wn.synsets(word)
+        for lemma in synset.lemmas()
+        if lemma.name().lower() in (word, base)
+    )
+    return usage >= _COMMON_WORD_COUNT
+
+
+def _repair_split_words(text):
+    '''Re-join words the PDF extractor broke apart.
+
+    Some PDFs place glyph runs individually and pypdf inserts a space
+    wherever the gap between runs looks wide, giving "M anagement",
+    "tak ing" and "thro ugh".  Two neighbouring fragments are joined when
+
+      * the joined word occurs intact elsewhere in this document, and
+      * at least one fragment is not a word in its own right: neither
+        everyday English nor a dictionary word seen outside this split.
+
+    The second test is what keeps genuine pairs such as "over time" or
+    "a rate" apart.  pypdf's layout mode avoids the splits, but it
+    interleaves the columns of multi-column pages, which is worse.
+    '''
+    words = Counter(word.lower() for word in re.findall(r'[A-Za-z]+', text))
+    pairs = Counter(
+        (match.group(1).lower(), match.group(2))
+        for match in _SPLIT_PAIR.finditer(text)
+    )
+
+    def is_word_here(fragment, split_count):
+        # WordNet lists every letter ("n": nitrogen), and other splits
+        # leave stray letters all over the text, so neither is evidence.
+        if len(fragment) == 1:
+            return fragment in ('a', 'i')
+        return _is_common_word(fragment) or (
+            _in_dictionary(fragment) and words[fragment] > split_count
+        )
+
+    def can_join(first, second):
+        if not words[first + second]:
+            return False
+        split_count = pairs[(first, second)]
+        return not (is_word_here(first, split_count)
+                    and is_word_here(second, split_count))
+
+    # Start of the last fragment that was joined to its left neighbour.
+    joined_left = -1
+
+    def join(match):
+        nonlocal joined_left
+        first, second = match.group(1), match.group(2)
+
+        # A fragment joins one neighbour at most: "So n or" is "Son or",
+        # not "Sonor".
+        if match.start(1) == joined_left:
+            return match.group(0)
+        if not can_join(first.lower(), second):
+            return match.group(0)
+
+        # When the second fragment completes the word after it instead,
+        # leave it for that join: "employee s hoes" is "employee shoes".
+        following = _NEXT_WORD.match(text, match.end(2))
+        if following:
+            third = following.group(1)
+            if can_join(second, third) and not is_word_here(
+                    third, pairs[(second, third)]):
+                return match.group(0)
+
+        joined_left = match.start(2)
+        return first                        # drop the space
+
+    try:
+        return _SPLIT_PAIR.sub(join, text)
+    except LookupError:     # WordNet data not installed: leave text as is
+        return text
+
+
 def clean_document(raw_text):
     '''Turn raw PDF extraction output into paragraph text.
 
@@ -163,6 +272,12 @@ def clean_document(raw_text):
     text = '\n\n'.join(paragraphs)
     text = re.sub(r'[ \t]+', ' ', text)
     text = re.sub(r' *\n\n *', '\n\n', text)
+
+    # Spacing damage from extraction, repaired once lines are re-flowed
+    # so splits that straddled a line break are caught too.
+    text = _repair_split_words(text)
+    text = _DETACHED_HYPHEN.sub('-', text)
+    text = _SPACE_BEFORE_PUNCT.sub(r'\1', text)
     return text.strip()
 
 
@@ -182,10 +297,17 @@ _DANGLING_OPENERS = (
 
 # Cross-reference and navigation sentences carry no testable content.
 _NON_CONTENT = re.compile(
-    r'\b(see page|refer to page|click here|go to table|'
-    r'for more information,? see|table of contents)\b',
+    r'\b(see page|refer to page|click here|go to table|table of contents|'
+    r'for (?:more|further) (?:specific |detailed )?'
+    r'(?:information|guidance|direction|details))\b',
     re.IGNORECASE,
 )
+# "See the guidance given in the section titled ..." points elsewhere.
+_CROSS_REFERENCE_OPENER = re.compile(
+    r'^(?:please\s+)?(?:see|refer\s+to)\b', re.IGNORECASE
+)
+
+_DEMONSTRATIVES = frozenset({'this', 'that', 'these', 'those'})
 
 _ALL_CAPS_RUN = re.compile(r'\b[A-Z]{3,}(?:\s+[A-Z]{2,}){2,}')
 
@@ -197,6 +319,60 @@ def _alpha_ratio(sentence):
     allowed = sum(c.isalpha() or c in ".,';!?-()$%" or c.isdigit()
                   for c in meaningful)
     return allowed / len(meaningful)
+
+
+def _has_unresolved_demonstrative(span):
+    '''A bare "this"/"those" refers to something outside the sentence.
+
+    "Keep this in mind and exercise care when you use ..." cannot be
+    answered without the sentence before it.  Determiners ("this Code"),
+    the conjunction "in that", and modified pronouns ("those with whom
+    we do business") are self-contained and allowed.
+    '''
+    for token in span:
+        if (token.lower_ in _DEMONSTRATIVES and token.tag_ == 'DT'
+                and token.dep_ not in ('det', 'mark')
+                and not any(child.dep_ in ('relcl', 'acl', 'prep')
+                            for child in token.children)):
+            return True
+    return False
+
+
+def _is_finite(token):
+    return token.tag_ == 'MD' or (
+        token.pos_ in ('VERB', 'AUX')
+        and 'Fin' in token.morph.get('VerbForm')
+    )
+
+
+def _inside_relative_clause(token, root):
+    while token.i != root.i and token.head.i != token.i:
+        if token.dep_ in ('relcl', 'acl'):
+            return True
+        token = token.head
+    return False
+
+
+def _lacks_main_clause(span):
+    '''True for list items that only look like sentences.
+
+    "Members of internal Intel groups that specialize in handling
+    reports." and "Failing to monitor vendors for whom you have
+    oversight." both carry a subject and a finite verb - but only inside
+    a relative clause.  The sentence itself has no main clause, so a
+    blank in it has nothing to hang on.
+    '''
+    root = span.root
+    # A verb root other than a gerund is a clause - imperatives included.
+    if root.pos_ in ('VERB', 'AUX') and root.tag_ != 'VBG':
+        return False
+
+    finite = [token for token in span if _is_finite(token)]
+    # A noun root next to a modal is a misparse of a real sentence:
+    # "Employees who are involved in an accident ... must report it."
+    if root.pos_ != 'VERB' and any(token.tag_ == 'MD' for token in finite):
+        return False
+    return all(_inside_relative_clause(token, root) for token in finite)
 
 
 def is_quality_sentence(span):
@@ -226,7 +402,7 @@ def is_quality_sentence(span):
         return False
     if not _SENTENCE_END.search(text):
         return False
-    if _NON_CONTENT.search(text):
+    if _NON_CONTENT.search(text) or _CROSS_REFERENCE_OPENER.search(text):
         return False
     if _alpha_ratio(text) < 0.90:
         return False
@@ -250,6 +426,9 @@ def is_quality_sentence(span):
         for tok in span
     )
     if not (has_subject and has_finite_verb):
+        return False
+
+    if _lacks_main_clause(span) or _has_unresolved_demonstrative(span):
         return False
 
     return span.root.pos_ in ('VERB', 'AUX', 'NOUN', 'PROPN', 'ADJ')

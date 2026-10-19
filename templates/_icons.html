@@ -1,0 +1,30 @@
+{# Inline stroke icons; decorative unless a label is passed. #}
+{% macro svg(size, label, stroke_width='2') -%}
+<svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ stroke_width }}" stroke-linecap="round" stroke-linejoin="round" {% if label %}role="img" aria-label="{{ label }}"{% else %}aria-hidden="true"{% endif %}>{{ caller() }}</svg>
+{%- endmacro %}
+
+{% macro shield(size=18) -%}
+<svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"></path></svg>
+{%- endmacro %}
+
+{% macro plus(size=18, label=None) -%}{% call svg(size, label, '2.2') %}<path d="M12 5v14M5 12h14"></path>{% endcall %}{%- endmacro %}
+{% macro check(size=14, label=None) -%}{% call svg(size, label, '2.5') %}<path d="M5 12l5 5 9-10"></path>{% endcall %}{%- endmacro %}
+{% macro cross(size=14, label=None) -%}{% call svg(size, label, '2.5') %}<path d="M7 7l10 10M17 7L7 17"></path>{% endcall %}{%- endmacro %}
+{% macro alert(size=14, label=None) -%}{% call svg(size, label, '2.5') %}<circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16.5v.5"></path>{% endcall %}{%- endmacro %}
+{% macro info(size=20, label=None) -%}{% call svg(size, label) %}<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 7.5v.5"></path>{% endcall %}{%- endmacro %}
+{% macro upload(size=32, label=None) -%}{% call svg(size, label, '1.8') %}<path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"></path>{% endcall %}{%- endmacro %}
+{% macro file(size=22, label=None) -%}{% call svg(size, label, '1.8') %}<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"></path><path d="M14 3v5h5"></path>{% endcall %}{%- endmacro %}
+{% macro clock(size=20, label=None) -%}{% call svg(size, label) %}<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>{% endcall %}{%- endmacro %}
+{% macro list(size=20, label=None) -%}{% call svg(size, label) %}<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"></path>{% endcall %}{%- endmacro %}
+
+{% macro done_badge(size=48, label='Passed') -%}
+<svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" role="img" aria-label="{{ label }}"><circle cx="12" cy="12" r="11" fill="#1F4FB6"></circle><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+{%- endmacro %}
+
+{% macro retry_badge(size=48, label='Not passed') -%}
+<svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" role="img" aria-label="{{ label }}"><circle cx="12" cy="12" r="11" fill="#B4410F"></circle><path d="M12 7v6M12 16.5v.5" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"></path></svg>
+{%- endmacro %}
+
+{% macro spinner(size=24) -%}
+<svg class="spinner" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="#E8EEFB" stroke-width="3"></circle><path d="M12 2.5a9.5 9.5 0 0 1 9.5 9.5" fill="none" stroke="#1F4FB6" stroke-width="3" stroke-linecap="round"></path></svg>
+{%- endmacro %}

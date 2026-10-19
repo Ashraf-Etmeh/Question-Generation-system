@@ -16,7 +16,7 @@ import re
 from sentence_transformers import util
 
 from candidate_selection import normalise_phrase
-from nlp_models import semantic_model
+from nlp_models import nlp, semantic_model
 
 from question_extraction import BLANK
 
@@ -76,6 +76,98 @@ def drop_incomplete_questions(questions, min_options=4):
         counter += 1
 
     return kept
+
+
+# ---------------------------------------------------------------- #
+# Review flags: reasons for a reviewer to look twice
+# ---------------------------------------------------------------- #
+
+LONG_QUESTION_WORDS = 35
+LONG_REFERENCE_WORDS = 40
+
+# A clause opening with one of these is subordinate, not spliced on:
+# "When you are hired, we are required ...".  spaCy does not always
+# mark them as such ("when" is an adverb, "should" an inverted auxiliary).
+_SUBORDINATE_OPENERS = frozenset({
+    'when', 'whenever', 'while', 'once', 'if', 'unless', 'should', 'where',
+    'wherever', 'as', 'since', 'after', 'before', 'until', 'although',
+    'though', 'because', 'whether', 'so', 'that', 'what', 'which', 'who',
+    'how', 'why', 'to', 'for',
+})
+
+
+def _has_subject(token):
+    return any(child.dep_ in ('nsubj', 'nsubjpass', 'expl')
+               for child in token.children)
+
+
+def joins_clauses_with_comma(sentence):
+    '''True for a comma splice: two clauses, each with its own subject,
+    joined by a bare comma.
+
+    "Our scheduled work week runs Monday through Sunday for Lombard and
+    Rosemont, other locations are Wednesday through Tuesday." turned into
+    a question that reads awkwardly.  On the sample documents this fires
+    on about 4 of 900 usable sentences, so it suits an advisory flag.
+    '''
+    doc = sentence.doc
+    for token in sentence:
+        if token.pos_ not in ('VERB', 'AUX') or token.dep_ == 'ROOT':
+            continue
+        if not _has_subject(token):
+            continue
+        if any(child.dep_ in ('mark', 'cc') or child.tag_ in ('WRB', 'WDT', 'WP')
+               for child in token.children):
+            continue
+        if token.left_edge.lower_ in _SUBORDINATE_OPENERS:
+            continue
+        head = token.head
+        if head.pos_ not in ('VERB', 'AUX') or not _has_subject(head):
+            continue
+
+        # Clause, comma, main clause.
+        if token.i < head.i and token.dep_ in ('advcl', 'ccomp', 'parataxis'):
+            after = token.right_edge.i + 1
+            if (after + 1 < sentence.end and doc[after].text == ','
+                    and doc[after + 1].lower_ not in _SUBORDINATE_OPENERS):
+                return True
+        # Main clause, comma, clause.
+        if token.i > head.i and token.dep_ in ('conj', 'ccomp', 'parataxis'):
+            before = token.left_edge.i - 1
+            if before >= sentence.start and doc[before].text == ',':
+                return True
+    return False
+
+
+def review_flags(question_data):
+    '''Reasons a reviewer should look twice at a question; [] when none.
+
+    Advisory only: every question is shown to the reviewer anyway, these
+    just mark the ones most likely to need an edit.
+    '''
+    flags = []
+    question = question_data.get('question') or ''
+    is_free = question_data.get('type') == 'Free-Response'
+
+    if len(question.split()) > LONG_QUESTION_WORDS:
+        flags.append('Long question: consider trimming it.')
+
+    if is_free:
+        reference = question_data.get('answer') or ''
+        if len(reference.split()) > LONG_REFERENCE_WORDS:
+            flags.append('Long reference answer: hard to recall in full.')
+        return flags
+
+    # Near-duplicate options are not flagged here: the distractor
+    # generator already rejects them (incorrect_answer_generation).
+    source = question_data.get('source_sentence') or ''
+    if source:
+        sentence = next(nlp(source).sents, None)
+        if sentence is not None and joins_clauses_with_comma(sentence):
+            flags.append('Reads awkwardly: the source sentence joins two '
+                         'statements with a comma.')
+
+    return flags
 
 
 def evaluate_free_response(

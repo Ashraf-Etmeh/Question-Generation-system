@@ -21,8 +21,9 @@ flowchart TD
     G --> I[Distractor generation]
     H --> I
     I --> J[Final quality gate\ndrop_incomplete_questions]
-    J --> K[Trim to N requested]
-    K --> L[Quiz served to user]
+    J --> K[First N become the quiz,\nthe rest are kept as spares]
+    K --> R[HR review: edit, swap,\nremove, then publish]
+    R --> L[Employee takes the quiz]
     L --> M{Answer type}
     M -->|Multiple-Choice| N[Exact string match]
     M -->|Free-Response| O[SBERT cosine similarity]
@@ -38,6 +39,15 @@ flowchart TD
   every page, concatenate with `\n` separators.
 - `.txt` → read directly as UTF-8 (`errors='replace'` so a malformed
   byte doesn't crash the upload).
+
+The upload is written to a private temporary file, read and deleted.
+It is never saved under its own name, so it can't overwrite a sample in
+`pdf/`.
+
+A password-protected or damaged PDF raises `UnreadableDocumentError`
+with a message for the user. The upload route also rejects other file
+types, and files with no extractable text (typically scanned PDFs),
+each with its own message rather than an empty quiz.
 
 This is a straight extraction — no NLP yet. Raw PDF extraction is
 notoriously messy (headers/footers, table-of-contents dot leaders,
@@ -75,6 +85,20 @@ It runs entirely on regex and line-frequency counting:
 4. **Re-flow into paragraphs** — consecutive surviving lines are
    joined with spaces into one paragraph; blank lines / headings mark
    paragraph boundaries. Whitespace is then collapsed.
+5. **Repair spacing damage** — some PDFs position glyph runs
+   individually, and pypdf inserts a space wherever the gap looks wide:
+   `M anagement`, `thro ugh`, `tak ing`. `_repair_split_words` joins
+   two neighbouring fragments when the joined word occurs intact
+   elsewhere in the same document **and** at least one fragment is not
+   a word in its own right. A fragment counts as a word if it is a stop
+   word, common English (WordNet SemCor count ≥ 2), or a dictionary word
+   seen outside this split; that is what keeps `over time` and `a rate`
+   apart. A fragment joins one neighbour at most (`So n or` → `Son or`),
+   and a middle fragment goes to whichever side it completes
+   (`employee s hoes` → `employee shoes`). Detached hyphens
+   (`paid -time-off`) and spaces before punctuation (`Tuesday .`) are
+   fixed too. pypdf's layout mode avoids the splits, but it interleaves
+   the columns of multi-column pages.
 
 **Why punctuation is preserved:** an earlier version of this pipeline
 stripped all punctuation before parsing, which destroyed sentence
@@ -131,12 +155,14 @@ sentence:
 | Capitalisation | must start with an uppercase letter |
 | Termination | must end in `.`/`!`/`?` (optionally followed by a quote/bracket) |
 | Not itself a question | rejected if it ends in `?` (section headings like *"What is the purpose of this Code?"* can't be turned into a question) |
-| No cross-references | rejected if it matches `see page`, `refer to page`, `click here`, `table of contents`, etc. |
+| No cross-references | rejected if it opens with `See …` / `Refer to …`, or matches `see page`, `click here`, `table of contents`, `for more (specific) information/guidance/direction`, etc. |
 | Mostly alphabetic | ≥ 90% of non-space characters must be letters/digits/basic punctuation (`_alpha_ratio`) |
 | No ALL-CAPS run | rejected if it contains 3+ consecutive all-caps words (banner text) |
 | No dangling opener | rejected if the first word is a deictic pronoun/determiner (`this`, `they`, `it`, `such`, …) — the reader couldn't resolve what it refers to |
 | No mid-sentence split | rejected if it contains a raw newline, or a `.`/`!`/`?` immediately followed by a lower-case letter (a sign the sentence-boundary detector merged two passages) |
 | Real clause | via dependency parse: must contain a subject (`nsubj`/`nsubjpass`/`expl`) **and** a finite verb (a `VERB`/`AUX` token that isn't a gerund) |
+| Main clause | rejected when every finite verb sits inside a relative clause, as in list items like *"Members of internal groups that specialize in …"* or *"Failing to monitor vendors for whom you have …"* (`_lacks_main_clause`). A verb root other than a gerund always counts as a clause, so imperatives pass; so does a noun root next to a modal, which is a misparsed sentence |
+| No unresolved demonstrative | rejected when `this`/`that`/`these`/`those` stands alone as a pronoun (*"Keep this in mind …"*), since it points outside the sentence. Determiners (`this Code`), `in that`, and modified pronouns (`those with whom …`) are fine |
 | Sensible root | the sentence's dependency root must be a `VERB`, `AUX`, `NOUN`, `PROPN` or `ADJ` |
 
 Sentences are also de-duplicated by their lower-cased text. Everything
@@ -162,7 +188,9 @@ quality-gated sentence:
    `INFORMATIVE_LABELS` — `PERSON, ORG, GPE, LOC, NORP, FAC, EVENT,
    LAW, PRODUCT, DATE, TIME, MONEY, PERCENT, QUANTITY`. Bare
    `ORDINAL`/`CARDINAL` numbers are excluded — a lone number rarely
-   makes a fair question on its own.
+   makes a fair question on its own. A leading `the` is dropped, as it
+   is for noun chunks, so no option starts with an article the others
+   lack. The article stays in the stem, in front of the blank.
 2. **Noun chunks** (`doc.noun_chunks`), with any leading
    determiner/pronoun stripped off (so `"the Board of Directors"` →
    `"Board of Directors"`). Chunks whose grammatical root is a pronoun,
@@ -277,8 +305,13 @@ needed.
      `PERSON`/`NORP` entity, an `ORG`, or one of ~35 hand-listed
      person-referring nouns like `employee`, `director`, `contractor`)
      — a non-actor subject (e.g. a document title) gets a neutral
-     `"What does the Code of Conduct set out in relation to X?"` frame
-     instead of an agentive one;
+     `"What does <title> set out in relation to X?"` frame instead of
+     an agentive one;
+   - the document's own title (`document_title`): whichever of *Code
+     of Conduct*, *Code of Ethics*, *Standards of Business Conduct* or
+     *Handbook* the cleaned text mentions most (≥ 2 times), with the
+     verb agreeing with it (`"What do the Standards …"`); otherwise the
+     neutral `"the document"`;
    - the sentence's modal verb (`_modal_of`: `must`/`shall`/`should`/
      `may`/`can`/`will`);
    - keyword cues (`prohibited`/`may not` → a prohibition frame,
@@ -305,7 +338,9 @@ already used, via the same `is_redundant_with` check as cloze mode):
     `"Which organisation"` for an `ORG` entity, via `_LABEL_TO_WH`).
     Guarded heavily against ungrammatical results: no quoted speech or
     first-person pronouns in the sentence, the candidate must cover
-    the *entire* subject chunk, the sentence must be ≥ 10 words with
+    the *entire* subject phrase — its full dependency subtree, not just
+    spaCy's noun chunk, which stops at the head noun and would leave
+    `"What of confidential information requires …?"` — the sentence must be ≥ 10 words with
     ≥ 5 words remaining after the subject, no coordinated subject, no
     colon introducing a list, and singular/plural subject–verb
     agreement is checked so a plural subject isn't replaced in front
@@ -355,7 +390,12 @@ answer.
      States"`), same word-stems after a lightweight suffix-based
      stemmer (`_stem_word`, handles `-ies/-ches/-shes/-sses/-xes/-ves
      /-es/-s`) — catching plural/singular pairs like `"years"` vs
-     `"The Year"` — and a shared two-word "head" phrase.
+     `"The Year"` — and a shared two-word "head" phrase in either
+     direction (`"McDonald's Business Integrity"` vs `"Business
+     Integrity line"`). It also rejects phrases sharing ≥ 2 content
+     words and ≥ 75% of the shorter one's (`MAX_CONTENT_OVERLAP`), such
+     as `"initial period"` vs `"initial employment period"`. Either
+     would be a defensible answer.
    - **Shape match** (`_shape_matches`) — word-count must be within 2
      of the answer's, character length must be within a `0.4×–2.5×`
      ratio of the answer's, and digit-presence must match (a number
@@ -427,24 +467,53 @@ Anything that fails is dropped; survivors are renumbered from 1.
 
 ---
 
-## Step 9 — Overgeneration & trimming
+## Step 9 — Overgeneration, spares & review
 
-**File:** [workers.py](workers.py) — `txt2questions()` /
-`txt2questions_free()`
+**Files:** [workers.py](workers.py) — `generate_quiz()`;
+[question_processing.py](question_processing.py) — `review_flags()`;
+[app.py](app.py) — the review routes
 
 Because Step 8 drops a fraction of generated items, both generators are
-asked for **`n + 4`** questions (`_OVERGENERATE = 4`) up front, then
-the surviving, quality-gated set is trimmed back down to the requested
-`n` (`_trim`, keeping the lowest-numbered — i.e. earliest/highest
-ranked — survivors). Without the overgeneration margin, a single
-rejected item would silently leave the quiz short.
+asked for **`n + 4`** questions (`_OVERGENERATE = 4`) up front. HR picks
+`n` (5, 8 or 10) on the upload form. The first `n` sound survivors, in
+rank order, become the quiz, and the rest are kept as **spares**.
+Without the overgeneration margin, a single rejected item would
+silently leave the quiz short.
+
+The quiz is then a **draft**. HR reviews each question beside its
+source passage, and can:
+
+- edit the wording and the options, and pick the correct option;
+- set a written answer's marking (see 10b);
+- remove a question, which moves it to the spares;
+- swap a question for a spare, or add a spare.
+
+Saving a question counts as checking it. `review_flags()` marks the
+questions most likely to need an edit as *To check*:
+
+| Flag | Rule |
+|---|---|
+| Long question | stem over 35 words |
+| Long reference answer | written-answer reference over 40 words |
+| Reads awkwardly | the source sentence is a comma splice: two clauses with their own subjects joined by a bare comma. It ignores clauses opened by *when*, *if*, *should*, … even where spaCy doesn't mark them, and fires on about 4 of 900 usable sentences in the samples |
+
+**Publishing** locks the questions. From then on the answer key stays
+hidden until the quiz has been submitted.
 
 ---
 
 ## Step 10 — Grading
 
-**File:** [app.py](app.py) `/result` route +
+**File:** [app.py](app.py) `submit_quiz` / `_grade()` +
 [question_processing.py](question_processing.py) `evaluate_free_response()`
+
+The quiz, answers included, is kept server-side in `quiz_store/<id>.json`
+and never sent to the browser. A quiz's URL carries its random id, so a
+submission is always graded against the quiz it came from. The first
+submission is final: the result is saved with the quiz, and a
+resubmission re-shows it instead of regrading. A quiz passes when
+`score / total ≥ pass mark`. The result page shows the policy passage
+behind each answer.
 
 ### 10a. Multiple-Choice
 
@@ -463,9 +532,10 @@ constructed so exactly one of them equals the answer verbatim.
    (`semantic_model.encode(..., convert_to_tensor=True)`).
 4. Compute cosine similarity between the two embeddings
    (`sentence_transformers.util.cos_sim`).
-5. `status = 'Correct' if similarity >= 0.60 else 'Incorrect'`; the
-   raw similarity score (0.0–1.0) is also returned and shown to the
-   learner.
+5. `status = 'Correct' if similarity >= threshold else 'Incorrect'`. The
+   threshold is the question's marking, chosen during review: lenient
+   0.50, standard 0.60 (the default) or strict 0.70. The employee sees a
+   plain verdict ("Close match to the Handbook"), not the raw score.
 
 So free-response grading does **not** do keyword matching or exact
 comparison — it checks whether the learner's answer is semantically
@@ -489,12 +559,17 @@ answer still pass.
 | cloze leading words | ≥ 2 | question_extraction.py | minimum words before the blank |
 | cloze total context | ≥ 6 words | question_extraction.py | minimum words around the blank |
 | free-response length | 6–30 words | hybrid_assessment_system.py | valid question stem length |
+| document title | ≥ 2 mentions | hybrid_assessment_system.py | below this, stems say "the document" |
 | subject-question min sentence | ≥ 10 words | hybrid_assessment_system.py | enough substance to survive subject removal |
 | `MIN_SIMILARITY` | 0.30 | incorrect_answer_generation.py | distractor floor — below this, obviously wrong |
 | `MAX_SIMILARITY` | 0.78 | incorrect_answer_generation.py | distractor ceiling — above this, a paraphrase |
 | `MAX_MUTUAL_SIMILARITY` | 0.82 | incorrect_answer_generation.py | distractors must differ from each other |
+| `MAX_CONTENT_OVERLAP` | 0.75 | incorrect_answer_generation.py | share of content words above which two options name the same thing |
+| `_COMMON_WORD_COUNT` | 2 | text_cleaning.py | WordNet usage count above which a split fragment counts as a real word |
 | shape-match length ratio | 0.4×–2.5× | incorrect_answer_generation.py | option/answer length can't look mismatched |
-| free-response grading threshold | 0.60 cosine similarity | question_processing.py | pass/fail cut-off for semantic grading |
+| free-response grading threshold | 0.50 / 0.60 / 0.70 cosine similarity | app.py (`STRICTNESS`) | lenient / standard (default) / strict marking |
+| review flag: long question | > 35 words | question_processing.py | marks a stem as *To check* |
+| review flag: long reference | > 40 words | question_processing.py | marks a written answer as *To check* |
 | `_OVERGENERATE` | 4 | workers.py | spare questions requested to survive Step 8's drop rate |
 
 ---
@@ -503,13 +578,15 @@ answer still pass.
 
 | File | Role |
 |---|---|
-| [app.py](app.py) | Flask routes: upload, quiz rendering, grading, quiz archive |
+| [app.py](app.py) | Flask routes: quizzes dashboard, upload, review, publish, take, grading; server-side quiz store |
 | [workers.py](workers.py) | PDF/TXT extraction; top-level `txt2questions` / `txt2questions_free` entry points; overgenerate-and-trim |
-| [text_cleaning.py](text_cleaning.py) | PDF furniture removal, paragraph reflow, brand-token protection, sentence quality gate |
+| [text_cleaning.py](text_cleaning.py) | PDF furniture removal, paragraph reflow, split-word repair, brand-token protection, sentence quality gate |
 | [nlp_models.py](nlp_models.py) | Shared spaCy + SBERT model instances |
 | [candidate_selection.py](candidate_selection.py) | Answer-key candidate extraction + TF-IDF salience ranking |
 | [question_extraction.py](question_extraction.py) | Cloze (fill-in-the-blank) question builder — blank-based mode |
 | [hybrid_assessment_system.py](hybrid_assessment_system.py) | Free-Response builder + interrogative MCQ transforms — free-based mode |
 | [incorrect_answer_generation.py](incorrect_answer_generation.py) | Distractor pool, filtering, semantic-band ranking, diversification |
 | [question_processing.py](question_processing.py) | Final quality gate (`drop_incomplete_questions`) + free-response grading |
-| [generated_quizzes/](generated_quizzes/) | Saved HTML snapshots of past test runs (see `/quiz/archive`) |
+| `quiz_store/` | One JSON record per quiz: questions, spares, answer key, status, result (git-ignored) |
+| [templates/](templates/), [static/](static/) | Pages (all extending `base.html`), the shared stylesheet, and the upload and quiz scripts |
+| [tests/](tests/) | `unittest` suite: cleaning rules, generation on the sample PDFs, the web app (`python -m unittest discover tests`) |

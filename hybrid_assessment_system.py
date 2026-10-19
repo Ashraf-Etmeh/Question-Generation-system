@@ -77,6 +77,35 @@ _PERSON_NOUNS = frozenset({
     'member', 'board', 'committee', 'team', 'department',
 })
 
+# How a document refers to itself, so free-response stems name the right
+# source.  Hard-coding "the Code of Conduct" produced "What does the Code
+# of Conduct prohibit ...?" for an employee handbook.  The title is the
+# pattern the document mentions most; generic words such as "policy" are
+# left out because every kind of document uses them.  Each title carries
+# the auxiliary that agrees with it ("What do the Standards ...").
+_DOCUMENT_TITLES = (
+    (r'code of (?:business )?conduct', 'the Code of Conduct', 'does'),
+    (r'code of (?:business )?ethics', 'the Code of Ethics', 'does'),
+    (r'standards of business conduct', 'the Standards of Business Conduct',
+     'do'),
+    (r'handbook', 'the Handbook', 'does'),
+)
+# Counted on the cleaned text, which has lost the running headers that
+# repeat the title on every page - so the bar is low.  Below it the
+# neutral fallback is safer than guessing.
+_MIN_TITLE_MENTIONS = 2
+_FALLBACK_TITLE = ('the document', 'does')
+
+
+def document_title(document):
+    '''How the document names itself, e.g. ("the Handbook", "does").'''
+    best, best_count = _FALLBACK_TITLE, _MIN_TITLE_MENTIONS - 1
+    for pattern, title, does in _DOCUMENT_TITLES:
+        count = len(re.findall(pattern, document, re.IGNORECASE))
+        if count > best_count:
+            best, best_count = (title, does), count
+    return best
+
 
 class HybridAssessmentSystem:
     '''Builds a mixed free-response / multiple-choice assessment.'''
@@ -88,6 +117,7 @@ class HybridAssessmentSystem:
         self.doc = None
         self.sentences = []
         self.candidates = []
+        self.document_title, self.title_does = _FALLBACK_TITLE
 
     def get_assessment(self, document):
         '''Return {number: question record} for the whole assessment.
@@ -97,6 +127,7 @@ class HybridAssessmentSystem:
         Returns:
             * dict
         '''
+        self.document_title, self.title_does = document_title(document)
         self.doc = self.ner_tagger(document)
         self.sentences = select_quality_sentences(self.doc)
 
@@ -192,6 +223,8 @@ class HybridAssessmentSystem:
         modal = self._modal_of(sentence)
         lowered = sentence.text.lower()
 
+        title, does = self.document_title, self.title_does
+
         # "What must a franchisee do" only makes sense when the subject
         # is someone who can act.  A document title as subject produced
         # "What responsibility does the Code place on Social Media Code?"
@@ -208,8 +241,7 @@ class HybridAssessmentSystem:
 
         if not actor_subject:
             question = (
-                f'What does the Code of Conduct set out in relation to '
-                f'{subject}?'
+                f'What {does} {title} set out in relation to {subject}?'
             )
             question = re.sub(r'\s+', ' ', question).strip()
             if not self.is_valid_free_response_question(question):
@@ -218,24 +250,21 @@ class HybridAssessmentSystem:
 
         if modal in ('must', 'shall'):
             question = (
-                f'According to the Code of Conduct, what {modal} '
+                f'According to {title}, what {modal} '
                 f'{subject} do in this situation?'
             )
         elif 'prohibited' in lowered or 'may not' in lowered \
                 or 'must not' in lowered or 'forbidden' in lowered:
             question = (
-                f'What does the Code of Conduct prohibit in relation to '
-                f'{subject}?'
+                f'What {does} {title} prohibit in relation to {subject}?'
             )
         elif 'responsible' in lowered or 'responsibility' in lowered:
             question = (
-                f'What responsibility does the Code of Conduct place on '
-                f'{subject}?'
+                f'What responsibility {does} {title} place on {subject}?'
             )
         else:
             question = (
-                f'What requirement does the Code of Conduct set out for '
-                f'{subject}?'
+                f'What requirement {does} {title} set out for {subject}?'
             )
 
         question = re.sub(r'\s+', ' ', question).strip()
@@ -292,6 +321,16 @@ class HybridAssessmentSystem:
             return True
         return token.lemma_.lower() in _PERSON_NOUNS
 
+    @staticmethod
+    def _full_phrase(token):
+        '''The whole phrase headed by a token, post-modifiers included.
+
+        spaCy's noun chunks stop at the head noun: in "Disclosure of
+        confidential information requires ..." the chunk is only
+        "Disclosure".  The token's subtree is the complete phrase.
+        '''
+        return token.doc[token.left_edge.i:token.right_edge.i + 1]
+
     def build_subject_question(self, candidate):
         '''Turn "<answer> must report X." into "Who must report X?".
 
@@ -314,21 +353,19 @@ class HybridAssessmentSystem:
         if re.search(r'\b(I|me|my|we|us|our)\b', sentence.text):
             return ''
 
-        # The answer must cover the subject noun phrase in full, or the
-        # remainder of that phrase would dangle in front of the verb.
-        subject_chunk = None
-        for chunk in sentence.noun_chunks:
-            if chunk.root == root:
-                subject_chunk = chunk
-                break
-        if subject_chunk is None:
-            return ''
-        if normalise_phrase(subject_chunk.text) != normalise_phrase(span.text):
+        # The answer must cover the subject phrase in full, or the rest
+        # of that phrase would dangle in front of the verb.  Comparing
+        # against the noun chunk was not enough, because chunks omit
+        # post-modifiers: "Disclosure of confidential information
+        # requires ..." became "What of confidential information
+        # requires ...?".
+        subject = self._full_phrase(root)
+        if normalise_phrase(subject.text) != normalise_phrase(span.text):
             return ''
 
         # The subject has to open the sentence; substituting mid-sentence
         # would need the rest re-ordered.
-        if subject_chunk.start_char - sentence.start_char > 0:
+        if subject.start != sentence.start:
             return ''
 
         # spaCy splits a coordinated subject ("relevant laws or
@@ -337,7 +374,7 @@ class HybridAssessmentSystem:
         # complex?".  Skip any subject that is part of a coordination.
         if any(child.dep_ == 'conj' for child in root.children):
             return ''
-        next_index = subject_chunk.end - sentence.start
+        next_index = subject.end - sentence.start
         if next_index < len(sentence) and sentence[next_index].pos_ == 'CCONJ':
             return ''
 
@@ -351,7 +388,7 @@ class HybridAssessmentSystem:
             return ''
 
         remainder = sentence.text[
-            subject_chunk.end_char - sentence.start_char:
+            subject.end_char - sentence.start_char:
         ].strip()
         if len(remainder.split()) < 5:
             return ''
@@ -367,7 +404,6 @@ class HybridAssessmentSystem:
         # the plural - "What take many forms", "What were resolved on
         # January 2nd".  A modal carries no agreement, so "Who will be
         # asked to certify ..." is fine.
-        next_index = subject_chunk.end - sentence.start
         if next_index < len(sentence) and root.tag_ in ('NNS', 'NNPS'):
             following = sentence[next_index]
             if following.pos_ in ('VERB', 'AUX') and following.tag_ != 'MD':
@@ -396,6 +432,14 @@ class HybridAssessmentSystem:
         if verb.lemma_.lower() != 'be':
             return ''
 
+        # The answer must be the whole complement, or the question asks
+        # for a scrap of it: "Your immediate supervisor or manager is the
+        # best place to start ..." became "What is your immediate
+        # supervisor or manager?" with the answer "best place".
+        if (normalise_phrase(self._full_phrase(root).text)
+                != normalise_phrase(candidate.span.text)):
+            return ''
+
         subject = None
         for child in verb.children:
             if child.dep_ in ('nsubj', 'nsubjpass'):
@@ -404,11 +448,10 @@ class HybridAssessmentSystem:
         if subject is None or subject.pos_ == 'PRON':
             return ''
 
-        subject_text = ''
-        for chunk in sentence.noun_chunks:
-            if chunk.root == subject:
-                subject_text = chunk.text.strip()
-                break
+        # The full phrase, not the noun chunk, so "The purpose of this
+        # Code is ..." asks about "The purpose of this Code" rather than
+        # just "The purpose".
+        subject_text = self._full_phrase(subject).text.strip()
         if not subject_text or len(subject_text.split()) > 6:
             return ''
 
