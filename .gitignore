@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Local SBERT model (~90 MB). nlp_models.py falls back to downloading
+# sentence-transformers/all-MiniLM-L6-v2 from the HuggingFace hub.
+models/
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

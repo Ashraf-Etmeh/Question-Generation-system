@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet">
+
+    <title>Generated Quiz Archive</title>
+
+    <style>
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        .navbar {
+            box-shadow: none;
+            background-color: #000000 !important;
+            border-bottom: 4px solid #ecea2f;
+        }
+
+        .brand-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            margin-right: 10px;
+            color: #000000;
+            font-size: 0.95rem;
+            background: #ecea2f;
+            box-shadow: 0 6px 14px -4px rgba(236, 234, 47, 0.5);
+        }
+
+        .brand-name {
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+        }
+
+        .archive-container {
+            max-width: 850px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .eyebrow-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 16px;
+            border-radius: 999px;
+            background-color: #2a2a00;
+            color: #ecea2f;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 14px;
+        }
+
+        .archive-heading {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            margin-bottom: 32px;
+        }
+
+        .snapshot-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            background: #1a1a1a;
+            border-radius: 14px;
+            padding: 18px 22px;
+            margin-bottom: 14px;
+            border: 2px solid #2e2e2e;
+            border-left: 6px solid #ecea2f;
+            transition: all 0.2s ease;
+        }
+
+        .snapshot-row:hover {
+            border-color: #ecea2f;
+            transform: translateX(4px);
+        }
+
+        .snapshot-source {
+            font-weight: 700;
+            font-size: 1.02rem;
+            color: #ffffff;
+        }
+
+        .snapshot-meta {
+            color: #a3a3a3;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .method-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background-color: #2a2a00;
+            color: #ecea2f;
+            margin-right: 8px;
+        }
+
+        .custom-btn {
+            position: relative;
+            background: #ecea2f !important;
+            border: none;
+            border-radius: 10px;
+            color: #000000 !important;
+            transition: all 0.25s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 800 !important;
+        }
+
+        .custom-btn:hover {
+            background: #d4d300 !important;
+            box-shadow: 0 10px 20px -6px rgba(236, 234, 47, 0.45);
+        }
+
+        .empty-state-box {
+            border-radius: 20px;
+            border: 2px solid #2e2e2e;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <nav class="navbar" role="navigation">
+
+        <div class="container">
+
+            <div class="navbar-brand">
+
+                <a class="navbar-item" href="{{ url_for('index') }}">
+
+                    <span class="has-text-weight-bold is-size-4 is-flex is-align-items-center">
+
+                        <span class="brand-mark">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </span>
+
+                        <span class="brand-name">Onboarding AI</span>
+
+                    </span>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <div class="container archive-container">
+
+        <span class="eyebrow-tag">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            Test History
+        </span>
+
+        <h2 class="archive-heading">Generated Quiz Archive</h2>
+
+        {% if snapshots %}
+
+            {% for snapshot in snapshots %}
+
+            <div class="snapshot-row">
+
+                <div>
+                    <div class="snapshot-source">
+                        <i class="fa-solid fa-file-lines mr-1"></i>
+                        {{ snapshot.source }}
+                    </div>
+                    <div class="snapshot-meta">
+                        <span class="method-tag">{{ snapshot.method }}</span>
+                        {{ snapshot.time }}
+                    </div>
+                </div>
+
+                <a
+                    class="button custom-btn is-small"
+                    href="{{ url_for('quiz_archive_file', filename=snapshot.filename) }}"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    <span>Open</span>
+                    <span class="icon ml-2">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                    </span>
+                </a>
+
+            </div>
+
+            {% endfor %}
+
+        {% else %}
+
+        <div class="box has-text-centered py-6 empty-state-box">
+
+            <span class="icon is-large mb-3" style="font-size: 2.5rem; color: #ecea2f;">
+                <i class="fa-solid fa-folder-open"></i>
+            </span>
+
+            <h3 class="is-size-4 has-text-weight-bold">
+                No quizzes generated yet.
+            </h3>
+
+            <a href="{{ url_for('index') }}" class="button custom-btn mt-4">
+                Generate a Quiz
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</body>
+
+</html>

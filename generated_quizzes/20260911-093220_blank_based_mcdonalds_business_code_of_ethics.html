@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet">
+
+    <title>Policy Assessment Quiz</title>
+
+    <style>
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        .navbar {
+            box-shadow: none;
+            background-color: #000000 !important;
+            border-bottom: 4px solid #ecea2f;
+        }
+
+        .brand-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            margin-right: 10px;
+            color: #000000;
+            font-size: 0.95rem;
+            background: #ecea2f;
+            box-shadow: 0 6px 14px -4px rgba(236, 234, 47, 0.5);
+        }
+
+        .brand-name {
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+        }
+
+        .navbar-end .navbar-item {
+            color: #ffffff;
+            font-weight: 700;
+            transition: color 0.2s ease;
+        }
+
+        .navbar-end .navbar-item:hover {
+            color: #ecea2f;
+            background-color: transparent;
+        }
+
+        .quiz-container {
+            max-width: 750px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .eyebrow-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 16px;
+            border-radius: 999px;
+            background-color: #2a2a00;
+            color: #ecea2f;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 14px;
+        }
+
+        .quiz-heading {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            margin-bottom: 32px;
+        }
+
+        /* MCQ card */
+        .question-card {
+            position: relative;
+            background: #1a1a1a;
+            border-radius: 18px;
+            padding: 32px 30px 30px;
+            margin-bottom: 26px;
+            border: 2px solid #2e2e2e;
+            border-top: 6px solid #ecea2f;
+            box-shadow: 6px 6px 0 rgba(236, 234, 47, 0.08);
+            transition: all 0.25s ease;
+            color: #ffffff;
+        }
+
+        .question-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 6px 10px 0 rgba(236, 234, 47, 0.15);
+        }
+
+        /* Free-Response card – blue accent */
+        .question-card.is-free {
+            border-top-color: #2563eb;
+            box-shadow: 6px 6px 0 rgba(37, 99, 235, 0.1);
+        }
+
+        .question-card.is-free:hover {
+            box-shadow: 6px 10px 0 rgba(37, 99, 235, 0.18);
+        }
+
+        .question-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .q-number {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-weight: 800;
+            font-size: 0.95rem;
+            background: #ecea2f;
+            box-shadow: 0 6px 14px -4px rgba(236, 234, 47, 0.5);
+        }
+
+        .question-card.is-free .q-number {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #ffffff;
+            box-shadow: 0 6px 14px -4px rgba(37, 99, 235, 0.55);
+        }
+
+        .question-type {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mcq-badge {
+            background-color: #2a2a00;
+            color: #ecea2f;
+        }
+
+        .free-response-badge {
+            background-color: #1e3a5f;
+            color: #93c5fd;
+        }
+
+        .question-title {
+            font-weight: 700;
+            font-size: 1.15rem;
+            line-height: 1.55;
+            color: #ffffff;
+            margin: 0;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            margin-top: 12px;
+            border: 2px solid #2e2e2e;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #242424;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .option-label:hover {
+            background-color: #1a1a00;
+            border-color: #ecea2f;
+            box-shadow: 0 0 15px rgba(236, 234, 47, 0.15);
+            transform: translateX(4px);
+        }
+
+        input[type="radio"] {
+            margin-right: 12px;
+            accent-color: #ecea2f;
+            width: 18px;
+            height: 18px;
+        }
+
+        input[type="radio"]:checked + .option-text {
+            font-weight: 800;
+            color: #ecea2f;
+        }
+
+        .free-response-input {
+            width: 100%;
+            min-height: 160px;
+            padding: 15px;
+            border: 2px solid #2e2e2e;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background-color: #242424;
+            color: #ffffff;
+        }
+
+        .free-response-input::placeholder {
+            color: #5a5a5a;
+        }
+
+        .free-response-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .free-response-hint {
+            margin-top: 8px;
+            color: #a3a3a3;
+            font-size: 0.85rem;
+        }
+
+        .custom-btn {
+            position: relative;
+            background: #ecea2f !important;
+            border: none;
+            border-radius: 12px;
+            color: #000000 !important;
+            transition: all 0.25s ease;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 800 !important;
+            padding: 16px 20px !important;
+            height: auto !important;
+        }
+
+        .custom-btn:hover {
+            background: #d4d300 !important;
+            box-shadow: 0 14px 28px -6px rgba(236, 234, 47, 0.45);
+            transform: translateY(-3px);
+        }
+
+        .empty-state-box {
+            border-radius: 20px;
+            border: 2px solid #2e2e2e;
+            background: #1a1a1a;
+            box-shadow: 10px 10px 0 rgba(255, 56, 96, 0.2);
+            color: #ffffff;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <nav class="navbar" role="navigation">
+
+        <div class="container">
+
+            <div class="navbar-brand">
+
+                <a class="navbar-item" href="/">
+
+                    <span class="has-text-weight-bold is-size-4 is-flex is-align-items-center">
+
+                        <span class="brand-mark">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </span>
+
+                        <span class="brand-name">Onboarding AI</span>
+
+                    </span>
+
+                </a>
+
+            </div>
+
+            <div class="navbar-menu">
+                <div class="navbar-end">
+                    <a class="navbar-item" href="/quiz/archive">
+                        <i class="fa-solid fa-clock-rotate-left mr-2"></i>
+                        Past Quizzes
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <div class="container quiz-container">
+
+        
+
+        <form action="/result" method="POST">
+
+            <span class="eyebrow-tag">
+                <i class="fa-solid fa-list-check"></i>
+                Step 2 &middot; Answer The Questions
+            </span>
+
+            <h2 class="quiz-heading">Policy Assessment Questions</h2>
+
+
+            
+
+            <div class="question-card ">
+
+                <div class="question-top">
+
+                    <span class="q-number">1</span>
+
+                    
+                        <span class="question-type mcq-badge">
+                            <i class="fa-solid fa-list-check mr-1"></i>
+                            Multiple Choice
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">You can obtain copies of __________ from Human Resources or the legal Department for your area or from the global Compliance Office.</h3>
+
+                
+
+                    <div class="control">
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="1"
+                                value="the McDonald&#39;s Business Integrity"
+                                required
+                            >
+
+                            <span class="option-text">the McDonald&#39;s Business Integrity</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="1"
+                                value="McDonald&#39;s Standards of Business Conduct"
+                                required
+                            >
+
+                            <span class="option-text">McDonald&#39;s Standards of Business Conduct</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="1"
+                                value="the McDonald&#39;s System"
+                                required
+                            >
+
+                            <span class="option-text">the McDonald&#39;s System</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="1"
+                                value="McDonald&#39;s Board of Directors"
+                                required
+                            >
+
+                            <span class="option-text">McDonald&#39;s Board of Directors</span>
+
+                        </label>
+
+                        
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <div class="question-card ">
+
+                <div class="question-top">
+
+                    <span class="q-number">2</span>
+
+                    
+                        <span class="question-type mcq-badge">
+                            <i class="fa-solid fa-list-check mr-1"></i>
+                            Multiple Choice
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">If you wish to report anonymously, call the __________ at 1-800-261-9827 .</h3>
+
+                
+
+                    <div class="control">
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="2"
+                                value="the McDonald&#39;s Business Integrity"
+                                required
+                            >
+
+                            <span class="option-text">the McDonald&#39;s Business Integrity</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="2"
+                                value="Business dealings"
+                                required
+                            >
+
+                            <span class="option-text">Business dealings</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="2"
+                                value="Business Integrity line"
+                                required
+                            >
+
+                            <span class="option-text">Business Integrity line</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="2"
+                                value="Business Conduct"
+                                required
+                            >
+
+                            <span class="option-text">Business Conduct</span>
+
+                        </label>
+
+                        
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <div class="question-card ">
+
+                <div class="question-top">
+
+                    <span class="q-number">3</span>
+
+                    
+                        <span class="question-type mcq-badge">
+                            <i class="fa-solid fa-list-check mr-1"></i>
+                            Multiple Choice
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">If you believe that a law has been violated, consult with __________ or the legal Department immediately.</h3>
+
+                
+
+                    <div class="control">
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="3"
+                                value="the global Compliance Office"
+                                required
+                            >
+
+                            <span class="option-text">the global Compliance Office</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="3"
+                                value="compliance issues"
+                                required
+                            >
+
+                            <span class="option-text">compliance issues</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="3"
+                                value="the Standards of Business Conduct"
+                                required
+                            >
+
+                            <span class="option-text">the Standards of Business Conduct</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="3"
+                                value="Policies &amp; Standards"
+                                required
+                            >
+
+                            <span class="option-text">Policies &amp; Standards</span>
+
+                        </label>
+
+                        
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <div class="question-card ">
+
+                <div class="question-top">
+
+                    <span class="q-number">4</span>
+
+                    
+                        <span class="question-type mcq-badge">
+                            <i class="fa-solid fa-list-check mr-1"></i>
+                            Multiple Choice
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">We built our great System by helping owner/operators achieve their potential in __________ with McDonald&#39;s.</h3>
+
+                
+
+                    <div class="control">
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="4"
+                                value="positive business relationship"
+                                required
+                            >
+
+                            <span class="option-text">positive business relationship</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="4"
+                                value="business partners"
+                                required
+                            >
+
+                            <span class="option-text">business partners</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="4"
+                                value="positive influence"
+                                required
+                            >
+
+                            <span class="option-text">positive influence</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="4"
+                                value="business dealings"
+                                required
+                            >
+
+                            <span class="option-text">business dealings</span>
+
+                        </label>
+
+                        
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <div class="question-card ">
+
+                <div class="question-top">
+
+                    <span class="q-number">5</span>
+
+                    
+                        <span class="question-type mcq-badge">
+                            <i class="fa-solid fa-list-check mr-1"></i>
+                            Multiple Choice
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">You are responsible for proper use and protection of Company assets, and must use them only for __________.</h3>
+
+                
+
+                    <div class="control">
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="5"
+                                value="legitimate business purposes"
+                                required
+                            >
+
+                            <span class="option-text">legitimate business purposes</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="5"
+                                value="business interests"
+                                required
+                            >
+
+                            <span class="option-text">business interests</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="5"
+                                value="Business Integrity"
+                                required
+                            >
+
+                            <span class="option-text">Business Integrity</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="5"
+                                value="business dealings"
+                                required
+                            >
+
+                            <span class="option-text">business dealings</span>
+
+                        </label>
+
+                        
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <button
+                type="submit"
+                class="button custom-btn is-medium is-fullwidth has-text-weight-bold mt-5"
+            >
+                <span>Submit Answers &amp; View Result</span>
+                <span class="icon ml-2">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </span>
+            </button>
+
+        </form>
+
+
+        
+
+    </div>
+
+</body>
+
+</html>

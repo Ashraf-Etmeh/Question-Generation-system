@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+  <title>Employee Onboarding Assessment System</title>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #000000;
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      box-shadow: none;
+      background-color: #000000 !important;
+      border-bottom: 4px solid #ecea2f;
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      margin-right: 10px;
+      color: #000000;
+      font-size: 0.95rem;
+      background: #ecea2f;
+      box-shadow: 0 6px 14px -4px rgba(236, 234, 47, 0.5);
+    }
+
+    .brand-name {
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+
+    .navbar-end .navbar-item {
+      color: #ffffff;
+      font-weight: 700;
+      transition: color 0.2s ease;
+    }
+
+    .navbar-end .navbar-item:hover {
+      color: #ecea2f;
+      background-color: transparent;
+    }
+
+    /* ── Eyebrow tag ── */
+    .eyebrow-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      border-radius: 999px;
+      background-color: #2a2a00;
+      color: #ecea2f;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 18px;
+    }
+
+    /* ── Main card ── */
+    .main-box {
+      max-width: 650px;
+      margin: 50px auto;
+      background: #1a1a1a;
+      padding: 48px;
+      border-radius: 22px;
+      border: 2px solid #2e2e2e;
+      box-shadow: 10px 10px 0 rgba(236, 234, 47, 0.18);
+      color: #ffffff;
+    }
+
+    /* ── Hero text ── */
+    .hero-title {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    .hero-title .accent {
+      color: #ecea2f;
+    }
+
+    .hero-subtitle {
+      color: #a3a3a3;
+      max-width: 480px;
+      margin: 14px auto 0;
+      line-height: 1.6;
+    }
+
+    /* ── Upload area ── */
+    .upload-card {
+      border: 3px dashed #3a3a3a;
+      border-radius: 16px;
+      padding: 38px;
+      text-align: center;
+      transition: all 0.25s ease;
+      background: #242424;
+      cursor: pointer;
+      /* make it a proper block so hover works on the whole area */
+      display: block;
+      width: 100%;
+    }
+
+    .upload-card:hover {
+      border-color: #ecea2f;
+      background: #1a1a00;
+      box-shadow: 0 0 0 6px rgba(236, 234, 47, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .upload-icon-badge {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: #ecea2f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      color: #000000;
+      font-size: 1.5rem;
+      box-shadow: 0 10px 22px -6px rgba(236, 234, 47, 0.5);
+    }
+
+    .upload-label-text {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #ffffff;
+      margin-top: 4px;
+    }
+
+    .file-name-display {
+      display: block;
+      margin-top: 10px;
+      color: #5a5a5a;
+      font-size: 0.9rem;
+    }
+
+    /* ── Submit button ── */
+    .custom-btn {
+      background: #ecea2f !important;
+      border: none;
+      border-radius: 12px;
+      color: #000000 !important;
+      transition: all 0.25s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 800 !important;
+      padding: 16px 20px !important;
+      height: auto !important;
+    }
+
+    .custom-btn:hover {
+      background: #d4d300 !important;
+      box-shadow: 0 14px 28px -6px rgba(236, 234, 47, 0.45);
+      transform: translateY(-3px);
+    }
+
+    /* ── Method selector ── */
+    .method-title {
+      font-weight: 800;
+      color: #a3a3a3;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.85rem;
+    }
+
+    .method-options {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .method-option {
+      flex: 1;
+      position: relative;
+    }
+
+    .method-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .method-card {
+      display: block;
+      padding: 20px;
+      border: 2px solid #2e2e2e;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      height: 100%;
+      background: #242424;
+      color: #ffffff;
+    }
+
+    .method-card:hover {
+      border-color: #ecea2f;
+      background-color: #1a1a00;
+      transform: translateY(-2px);
+    }
+
+    .method-option input:checked + .method-card {
+      border-color: #ecea2f;
+      border-width: 3px;
+      background-color: #1a1a00;
+      box-shadow: 6px 6px 0 rgba(236, 234, 47, 0.2);
+      transform: translateY(-3px);
+    }
+
+    .method-icon {
+      font-size: 28px;
+      color: #ecea2f;
+      margin-bottom: 10px;
+    }
+
+    .method-name {
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 5px;
+    }
+
+    .method-description {
+      font-size: 0.85rem;
+      color: #a3a3a3;
+      line-height: 1.5;
+    }
+
+    .selected-indicator {
+      display: none;
+      color: #ecea2f;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-top: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .method-option input:checked + .method-card .selected-indicator {
+      display: block;
+    }
+
+    /* ── Footer ── */
+    footer p {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.7rem !important;
+      color: #5a5a5a;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .main-box {
+        margin: 30px 16px;
+        padding: 30px 24px;
+        box-shadow: 6px 6px 0 rgba(236, 234, 47, 0.18);
+      }
+
+      .method-options {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── Navbar ── -->
+  <nav class="navbar" role="navigation" aria-label="main navigation">
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item" href="{{ url_for('index') }}">
+          <span class="has-text-weight-bold is-size-4 is-flex is-align-items-center">
+            <span class="brand-mark">
+              <i class="fa-solid fa-shield-halved"></i>
+            </span>
+            <span class="brand-name">Onboarding AI</span>
+          </span>
+        </a>
+      </div>
+      <div class="navbar-menu">
+        <div class="navbar-end">
+          <a class="navbar-item" href="{{ url_for('quiz_archive') }}">
+            <i class="fa-solid fa-clock-rotate-left mr-2"></i>
+            Past Quizzes
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ── Main content ── -->
+  <main class="container">
+    <div class="main-box">
+
+      <!-- Heading -->
+      <div class="has-text-centered mb-5">
+
+        <span class="eyebrow-tag">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          AI-Powered Assessment Builder
+        </span>
+
+        <h1 class="hero-title">
+          Company Policy <span class="accent">Assessment</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Upload your official PDF policy document to instantly generate
+          smart quizzes and distractor options for new hires.
+        </p>
+
+      </div>
+
+
+      <!-- Form -->
+      <form action="/quiz" method="POST" enctype="multipart/form-data">
+
+        <!-- PDF Upload -->
+        <div class="mb-5">
+
+          <label class="upload-card" for="pdf-upload">
+
+            <input
+              id="pdf-upload"
+              class="file-input"
+              type="file"
+              name="file"
+              accept=".txt,text/plain,application/pdf"
+              style="display: none;"
+              required
+            />
+
+            <span class="upload-icon-badge">
+              <i class="fas fa-file-pdf"></i>
+            </span>
+
+            <span class="upload-label-text">
+              Click to browse your PDF policy
+            </span>
+
+            <span class="file-name-display" id="file-name-display">
+              No PDF file selected
+            </span>
+
+          </label>
+
+        </div>
+
+
+        <!-- Method selector -->
+        <div class="mb-5">
+
+          <p class="method-title">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: #ecea2f;"></i>
+            &nbsp;Choose Quiz Generation Method
+          </p>
+
+          <div class="method-options">
+
+            <!-- Blank Based -->
+            <div class="method-option">
+              <input type="radio" id="blank_based" name="generation_method"
+                     value="blank_based" checked />
+              <label class="method-card" for="blank_based">
+                <div class="has-text-centered">
+                  <div class="method-icon">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </div>
+                  <div class="method-name">Blank-Based</div>
+                  <div class="method-description">
+                    Generate questions by creating blanks from important
+                    information in the policy.
+                  </div>
+                  <div class="selected-indicator">
+                    <i class="fa-solid fa-check"></i> Selected
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Free Based -->
+            <div class="method-option">
+              <input type="radio" id="free_based" name="generation_method"
+                     value="free_based" />
+              <label class="method-card" for="free_based">
+                <div class="has-text-centered">
+                  <div class="method-icon">
+                    <i class="fa-solid fa-brain"></i>
+                  </div>
+                  <div class="method-name">Free-Based</div>
+                  <div class="method-description">
+                    Generate questions freely from the important concepts
+                    and information in the policy.
+                  </div>
+                  <div class="selected-indicator">
+                    <i class="fa-solid fa-check"></i> Selected
+                  </div>
+                </div>
+              </label>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- Submit -->
+        <button type="submit"
+                class="button custom-btn is-medium is-fullwidth has-text-weight-bold">
+          <span>Generate Assessment Quiz</span>
+          <span class="icon ml-2">
+            <i class="fa-solid fa-arrow-right"></i>
+          </span>
+        </button>
+
+      </form>
+
+    </div>
+  </main>
+
+
+  <!-- ── Footer ── -->
+  <footer class="has-text-centered py-4">
+    <p>Employee Onboarding System &copy; 2026</p>
+  </footer>
+
+
+  <!-- JavaScript -->
+  <script>
+    const fileInput = document.getElementById('pdf-upload');
+    const fileNameDisplay = document.getElementById('file-name-display');
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        fileNameDisplay.textContent = fileInput.files[0].name;
+        fileNameDisplay.style.color = '#ecea2f';
+        fileNameDisplay.style.fontWeight = '600';
+      } else {
+        fileNameDisplay.textContent = 'No PDF file selected';
+        fileNameDisplay.style.color = '#5a5a5a';
+        fileNameDisplay.style.fontWeight = 'normal';
+      }
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet">
+
+    <title>Assessment Results &amp; Correction</title>
+
+    <style>
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        .navbar {
+            box-shadow: none;
+            background-color: #000000 !important;
+            border-bottom: 4px solid #ecea2f;
+        }
+
+        .brand-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            margin-right: 10px;
+            color: #000000;
+            font-size: 0.95rem;
+            background: #ecea2f;
+            box-shadow: 0 6px 14px -4px rgba(236, 234, 47, 0.5);
+        }
+
+        .brand-name {
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+        }
+
+        .results-container {
+            max-width: 750px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .eyebrow-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 16px;
+            border-radius: 999px;
+            background-color: #2a2a00;
+            color: #ecea2f;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 18px;
+        }
+
+        .score-hero {
+            text-align: center;
+            padding: 44px 30px 36px;
+            margin-bottom: 48px;
+            border-radius: 22px;
+            border: 2px solid #2e2e2e;
+            background: #1a1a1a;
+            box-shadow: 10px 10px 0 rgba(236, 234, 47, 0.15);
+            color: #ffffff;
+        }
+
+        .score-ring {
+            width: 128px;
+            height: 128px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 3px;
+            color: #000000;
+            background: #ecea2f;
+            box-shadow: 0 16px 30px -8px rgba(236, 234, 47, 0.5);
+        }
+
+        .score-value {
+            font-size: 2.75rem;
+            font-weight: 900;
+            color: #000000;
+        }
+
+        .score-total {
+            font-size: 1.05rem;
+            font-weight: 700;
+            opacity: 0.75;
+            color: #000000;
+        }
+
+        .score-heading {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+        }
+
+        .score-hero .has-text-grey {
+            color: #a3a3a3 !important;
+        }
+
+        .section-heading {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+            margin-bottom: 22px;
+        }
+
+        /* Result cards */
+        .result-card {
+            position: relative;
+            background: #1a1a1a;
+            border-radius: 18px;
+            padding: 32px 30px 30px;
+            margin-bottom: 26px;
+            border: 2px solid #2e2e2e;
+            border-top: 6px solid #ecea2f;
+            box-shadow: 6px 6px 0 rgba(236, 234, 47, 0.08);
+            transition: all 0.25s ease;
+            color: #ffffff;
+        }
+
+        .result-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 6px 10px 0 rgba(236, 234, 47, 0.15);
+        }
+
+        .result-card.is-free {
+            border-top-color: #2563eb;
+            box-shadow: 6px 6px 0 rgba(37, 99, 235, 0.1);
+        }
+
+        .result-card.is-free:hover {
+            box-shadow: 6px 10px 0 rgba(37, 99, 235, 0.18);
+        }
+
+        .question-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .q-number {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-weight: 800;
+            font-size: 0.95rem;
+            background: #ecea2f;
+            box-shadow: 0 6px 14px -4px rgba(236, 234, 47, 0.5);
+        }
+
+        .result-card.is-free .q-number {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #ffffff;
+            box-shadow: 0 6px 14px -4px rgba(37, 99, 235, 0.55);
+        }
+
+        .question-type {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mcq-badge {
+            background-color: #2a2a00;
+            color: #ecea2f;
+        }
+
+        .free-response-badge {
+            background-color: #1e3a5f;
+            color: #93c5fd;
+        }
+
+        .question-title {
+            font-weight: 700;
+            font-size: 1.15rem;
+            line-height: 1.55;
+            color: #ffffff;
+            margin: 0 0 20px;
+        }
+
+        /* MCQ option review rows */
+        .option-review {
+            display: flex;
+            align-items: center;
+            padding: 13px 18px;
+            margin-top: 10px;
+            border-radius: 12px;
+            border: 2px solid #2e2e2e;
+            background-color: #242424;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .is-correct-option {
+            background-color: #052e0f !important;
+            border-color: #23d160 !important;
+            border-width: 3px !important;
+            color: #4ade80 !important;
+            font-weight: 800;
+        }
+
+        .is-wrong-option {
+            background-color: #2d0a0a !important;
+            border-color: #ff3860 !important;
+            border-width: 3px !important;
+            color: #f87171 !important;
+            font-weight: 700;
+        }
+
+        /* Free-response answer boxes */
+        .answer-box {
+            padding: 18px;
+            margin-top: 12px;
+            border-radius: 12px;
+            border: 2px solid #2e2e2e;
+            background-color: #242424;
+            color: #ffffff;
+        }
+
+        .user-answer {
+            border-left: 5px solid #3b82f6;
+        }
+
+        .correct-answer {
+            border-left: 5px solid #23d160;
+            background-color: #052e0f;
+        }
+
+        .incorrect-answer {
+            border-left: 5px solid #ff3860;
+            background-color: #2d0a0a;
+        }
+
+        .answer-title {
+            font-size: 0.75rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #a3a3a3;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .answer-text {
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* Semantic similarity box */
+        .similarity-score {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            background-color: #1e2a40;
+            border: 2px solid #2c4a6e;
+            color: #ffffff;
+        }
+
+        .similarity-score .has-text-weight-bold {
+            color: #ffffff;
+        }
+
+        /* Main CTA button */
+        .custom-btn {
+            position: relative;
+            background: #ecea2f !important;
+            border: none;
+            border-radius: 12px;
+            color: #000000 !important;
+            transition: all 0.25s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 800 !important;
+            padding: 16px 24px !important;
+            height: auto !important;
+        }
+
+        .custom-btn:hover {
+            background: #d4d300 !important;
+            box-shadow: 0 14px 28px -6px rgba(236, 234, 47, 0.45);
+            transform: translateY(-3px);
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <nav class="navbar" role="navigation">
+
+        <div class="container">
+
+            <div class="navbar-brand">
+
+                <a class="navbar-item" href="{{ url_for('index') }}">
+
+                    <span class="has-text-weight-bold is-size-4 is-flex is-align-items-center">
+
+                        <span class="brand-mark">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </span>
+
+                        <span class="brand-name">Onboarding AI</span>
+
+                    </span>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <div class="container results-container">
+
+        <div class="score-hero">
+
+            <span class="eyebrow-tag">
+                <i class="fa-solid fa-flag-checkered"></i>
+                Assessment Complete
+            </span>
+
+            <div class="score-ring">
+                <span class="score-value">{{ score }}</span>
+                <span class="score-total">/ {{ total }}</span>
+            </div>
+
+            <h2 class="score-heading">Assessment Results</h2>
+
+            <p class="has-text-grey mt-2">
+                You answered
+                <strong style="color: #ecea2f;">{{ score }}</strong>
+                out of
+                <strong style="color: #ecea2f;">{{ total }}</strong>
+                questions correctly.
+            </p>
+
+        </div>
+
+        <h3 class="section-heading">Detailed Correction Review</h3>
+
+        {% for question_id, question in review_data.items() %}
+
+        <div class="result-card {{ 'is-free' if question['type'] == 'Free-Response' else '' }}">
+
+            <div class="question-top">
+
+                <span class="q-number">{{ loop.index }}</span>
+
+                {% if question['type'] == 'Free-Response' %}
+                    <span class="question-type free-response-badge">
+                        <i class="fa-solid fa-pen mr-1"></i>
+                        Free Response
+                    </span>
+                {% else %}
+                    <span class="question-type mcq-badge">
+                        <i class="fa-solid fa-list-check mr-1"></i>
+                        Multiple Choice
+                    </span>
+                {% endif %}
+
+            </div>
+
+            <h4 class="question-title">{{ question['question'] }}</h4>
+
+
+            {% if question['type'] == 'Multiple-Choice' %}
+
+                <div class="control">
+
+                    {% for option in question['options'] %}
+
+                        {% set is_user_choice = (option == question['user_answer']) %}
+                        {% set is_correct     = (option == question['correct_answer']) %}
+
+                        <div class="option-review
+                            {% if is_correct %}
+                                is-correct-option
+                            {% elif is_user_choice %}
+                                is-wrong-option
+                            {% endif %}">
+
+                            <span class="mr-3">
+                                {% if is_correct %}
+                                    <i class="fa-solid fa-circle-check has-text-success is-size-5"></i>
+                                {% elif is_user_choice %}
+                                    <i class="fa-solid fa-circle-xmark has-text-danger is-size-5"></i>
+                                {% else %}
+                                    <i class="fa-regular fa-circle has-text-grey-light is-size-5"></i>
+                                {% endif %}
+                            </span>
+
+                            <span>{{ option }}</span>
+
+                            {% if is_correct %}
+                                <span class="ml-auto tag is-success is-light has-text-weight-bold">
+                                    Correct Answer
+                                </span>
+                            {% elif is_user_choice %}
+                                <span class="ml-auto tag is-danger is-light has-text-weight-bold">
+                                    Your Answer
+                                </span>
+                            {% endif %}
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% elif question['type'] == 'Free-Response' %}
+
+                <!-- User answer -->
+                <div class="answer-box user-answer
+                    {% if question['correct'] %}correct-answer{% else %}incorrect-answer{% endif %}">
+
+                    <div class="answer-title">
+                        <i class="fa-solid fa-user mr-1"></i>
+                        Your Answer
+                    </div>
+
+                    <div class="answer-text">
+                        {% if question['user_answer'] %}
+                            {{ question['user_answer'] }}
+                        {% else %}
+                            <span style="color: #5a5a5a;">No answer provided.</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <!-- Reference answer -->
+                <div class="answer-box correct-answer">
+
+                    <div class="answer-title">
+                        <i class="fa-solid fa-circle-check has-text-success mr-1"></i>
+                        Reference Answer
+                    </div>
+
+                    <div class="answer-text">{{ question['correct_answer'] }}</div>
+
+                </div>
+
+                <!-- Semantic evaluation -->
+                <div class="similarity-score">
+
+                    <div class="is-flex is-justify-content-space-between is-align-items-center">
+
+                        <span class="has-text-weight-bold">
+                            <i class="fa-solid fa-chart-simple mr-1"></i>
+                            Semantic Similarity
+                        </span>
+
+                        <span class="tag
+                            {% if question['correct'] %}is-success{% else %}is-danger{% endif %}
+                            is-medium">
+                            {{ "%.1f"|format(question['score'] * 100) }}%
+                        </span>
+
+                    </div>
+
+                    <p class="mt-2">
+                        {% if question['status'] == 'Correct' %}
+                            <span class="has-text-success">
+                                <i class="fa-solid fa-circle-check mr-1"></i>
+                                Your answer is considered correct.
+                            </span>
+                        {% else %}
+                            <span class="has-text-danger">
+                                <i class="fa-solid fa-circle-xmark mr-1"></i>
+                                Your answer does not sufficiently match the reference answer.
+                            </span>
+                        {% endif %}
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+        <div class="has-text-centered mt-5">
+
+            <a href="{{ url_for('index') }}"
+               class="button custom-btn is-medium has-text-weight-bold px-6">
+
+                <span class="icon mr-2">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </span>
+
+                <span>Upload Another Document</span>
+
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

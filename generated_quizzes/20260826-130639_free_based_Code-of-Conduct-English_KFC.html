@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet">
+
+    <title>Policy Assessment Quiz</title>
+
+    <style>
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        .navbar {
+            box-shadow: none;
+            background-color: #000000 !important;
+            border-bottom: 4px solid #ecea2f;
+        }
+
+        .brand-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            margin-right: 10px;
+            color: #000000;
+            font-size: 0.95rem;
+            background: #ecea2f;
+            box-shadow: 0 6px 14px -4px rgba(236, 234, 47, 0.5);
+        }
+
+        .brand-name {
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+        }
+
+        .navbar-end .navbar-item {
+            color: #ffffff;
+            font-weight: 700;
+            transition: color 0.2s ease;
+        }
+
+        .navbar-end .navbar-item:hover {
+            color: #ecea2f;
+            background-color: transparent;
+        }
+
+        .quiz-container {
+            max-width: 750px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .eyebrow-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 16px;
+            border-radius: 999px;
+            background-color: #2a2a00;
+            color: #ecea2f;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 14px;
+        }
+
+        .quiz-heading {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            margin-bottom: 32px;
+        }
+
+        /* MCQ card */
+        .question-card {
+            position: relative;
+            background: #1a1a1a;
+            border-radius: 18px;
+            padding: 32px 30px 30px;
+            margin-bottom: 26px;
+            border: 2px solid #2e2e2e;
+            border-top: 6px solid #ecea2f;
+            box-shadow: 6px 6px 0 rgba(236, 234, 47, 0.08);
+            transition: all 0.25s ease;
+            color: #ffffff;
+        }
+
+        .question-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 6px 10px 0 rgba(236, 234, 47, 0.15);
+        }
+
+        /* Free-Response card – blue accent */
+        .question-card.is-free {
+            border-top-color: #2563eb;
+            box-shadow: 6px 6px 0 rgba(37, 99, 235, 0.1);
+        }
+
+        .question-card.is-free:hover {
+            box-shadow: 6px 10px 0 rgba(37, 99, 235, 0.18);
+        }
+
+        .question-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .q-number {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-weight: 800;
+            font-size: 0.95rem;
+            background: #ecea2f;
+            box-shadow: 0 6px 14px -4px rgba(236, 234, 47, 0.5);
+        }
+
+        .question-card.is-free .q-number {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #ffffff;
+            box-shadow: 0 6px 14px -4px rgba(37, 99, 235, 0.55);
+        }
+
+        .question-type {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mcq-badge {
+            background-color: #2a2a00;
+            color: #ecea2f;
+        }
+
+        .free-response-badge {
+            background-color: #1e3a5f;
+            color: #93c5fd;
+        }
+
+        .question-title {
+            font-weight: 700;
+            font-size: 1.15rem;
+            line-height: 1.55;
+            color: #ffffff;
+            margin: 0;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            margin-top: 12px;
+            border: 2px solid #2e2e2e;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #242424;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .option-label:hover {
+            background-color: #1a1a00;
+            border-color: #ecea2f;
+            box-shadow: 0 0 15px rgba(236, 234, 47, 0.15);
+            transform: translateX(4px);
+        }
+
+        input[type="radio"] {
+            margin-right: 12px;
+            accent-color: #ecea2f;
+            width: 18px;
+            height: 18px;
+        }
+
+        input[type="radio"]:checked + .option-text {
+            font-weight: 800;
+            color: #ecea2f;
+        }
+
+        .free-response-input {
+            width: 100%;
+            min-height: 160px;
+            padding: 15px;
+            border: 2px solid #2e2e2e;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background-color: #242424;
+            color: #ffffff;
+        }
+
+        .free-response-input::placeholder {
+            color: #5a5a5a;
+        }
+
+        .free-response-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .free-response-hint {
+            margin-top: 8px;
+            color: #a3a3a3;
+            font-size: 0.85rem;
+        }
+
+        .custom-btn {
+            position: relative;
+            background: #ecea2f !important;
+            border: none;
+            border-radius: 12px;
+            color: #000000 !important;
+            transition: all 0.25s ease;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 800 !important;
+            padding: 16px 20px !important;
+            height: auto !important;
+        }
+
+        .custom-btn:hover {
+            background: #d4d300 !important;
+            box-shadow: 0 14px 28px -6px rgba(236, 234, 47, 0.45);
+            transform: translateY(-3px);
+        }
+
+        .empty-state-box {
+            border-radius: 20px;
+            border: 2px solid #2e2e2e;
+            background: #1a1a1a;
+            box-shadow: 10px 10px 0 rgba(255, 56, 96, 0.2);
+            color: #ffffff;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <nav class="navbar" role="navigation">
+
+        <div class="container">
+
+            <div class="navbar-brand">
+
+                <a class="navbar-item" href="/">
+
+                    <span class="has-text-weight-bold is-size-4 is-flex is-align-items-center">
+
+                        <span class="brand-mark">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </span>
+
+                        <span class="brand-name">Onboarding AI</span>
+
+                    </span>
+
+                </a>
+
+            </div>
+
+            <div class="navbar-menu">
+                <div class="navbar-end">
+                    <a class="navbar-item" href="/quiz/archive">
+                        <i class="fa-solid fa-clock-rotate-left mr-2"></i>
+                        Past Quizzes
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <div class="container quiz-container">
+
+        
+
+        <form action="/result" method="POST">
+
+            <span class="eyebrow-tag">
+                <i class="fa-solid fa-list-check"></i>
+                Step 2 &middot; Answer The Questions
+            </span>
+
+            <h2 class="quiz-heading">Policy Assessment Questions</h2>
+
+
+            
+
+            <div class="question-card is-free">
+
+                <div class="question-top">
+
+                    <span class="q-number">1</span>
+
+                    
+                        <span class="question-type free-response-badge">
+                            <i class="fa-solid fa-pen mr-1"></i>
+                            Free Response
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">What does the Code of Conduct set out in relation to the Yum! Brands Social Media Code?</h3>
+
+                
+
+                    <div class="control">
+
+                        <textarea
+                            class="free-response-input"
+                            name="1"
+                            placeholder="Write your answer here..."
+                            required
+                        ></textarea>
+
+                        <p class="free-response-hint">
+                            <i class="fa-solid fa-circle-info mr-1"></i>
+                            Explain your answer clearly using the relevant policy or provisions.
+                        </p>
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <div class="question-card ">
+
+                <div class="question-top">
+
+                    <span class="q-number">2</span>
+
+                    
+                        <span class="question-type mcq-badge">
+                            <i class="fa-solid fa-list-check mr-1"></i>
+                            Multiple Choice
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">What is information that can be used (alone or in conjunction with other information) to uniquely identify an individual?</h3>
+
+                
+
+                    <div class="control">
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="2"
+                                value="Personal purchase"
+                                required
+                            >
+
+                            <span class="option-text">Personal purchase</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="2"
+                                value="Personal use"
+                                required
+                            >
+
+                            <span class="option-text">Personal use</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="2"
+                                value="Personal information"
+                                required
+                            >
+
+                            <span class="option-text">Personal information</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="2"
+                                value="Personal device"
+                                required
+                            >
+
+                            <span class="option-text">Personal device</span>
+
+                        </label>
+
+                        
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <div class="question-card ">
+
+                <div class="question-top">
+
+                    <span class="q-number">3</span>
+
+                    
+                        <span class="question-type mcq-badge">
+                            <i class="fa-solid fa-list-check mr-1"></i>
+                            Multiple Choice
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">What in the hands of employees must be returned to the Company upon request and in all cases when employment ends?</h3>
+
+                
+
+                    <div class="control">
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="3"
+                                value="Company data"
+                                required
+                            >
+
+                            <span class="option-text">Company data</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="3"
+                                value="Other assigned assets"
+                                required
+                            >
+
+                            <span class="option-text">Other assigned assets</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="3"
+                                value="Company assets"
+                                required
+                            >
+
+                            <span class="option-text">Company assets</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="3"
+                                value="Company resources"
+                                required
+                            >
+
+                            <span class="option-text">Company resources</span>
+
+                        </label>
+
+                        
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <div class="question-card ">
+
+                <div class="question-top">
+
+                    <span class="q-number">4</span>
+
+                    
+                        <span class="question-type mcq-badge">
+                            <i class="fa-solid fa-list-check mr-1"></i>
+                            Multiple Choice
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">Who will be asked to certify their commitment to adhere to the standards of conduct contained in this Code?</h3>
+
+                
+
+                    <div class="control">
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="4"
+                                value="New employees"
+                                required
+                            >
+
+                            <span class="option-text">New employees</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="4"
+                                value="Individual employees"
+                                required
+                            >
+
+                            <span class="option-text">Individual employees</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="4"
+                                value="Employment"
+                                required
+                            >
+
+                            <span class="option-text">Employment</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="4"
+                                value="Company personnel"
+                                required
+                            >
+
+                            <span class="option-text">Company personnel</span>
+
+                        </label>
+
+                        
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <div class="question-card ">
+
+                <div class="question-top">
+
+                    <span class="q-number">5</span>
+
+                    
+                        <span class="question-type mcq-badge">
+                            <i class="fa-solid fa-list-check mr-1"></i>
+                            Multiple Choice
+                        </span>
+                    
+
+                </div>
+
+                <h3 class="question-title">What may give rise to competition law risks?</h3>
+
+                
+
+                    <div class="control">
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="5"
+                                value="statements"
+                                required
+                            >
+
+                            <span class="option-text">statements</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="5"
+                                value="circumstances"
+                                required
+                            >
+
+                            <span class="option-text">circumstances</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="5"
+                                value="behavior"
+                                required
+                            >
+
+                            <span class="option-text">behavior</span>
+
+                        </label>
+
+                        
+
+                        <label class="option-label">
+
+                            <input
+                                type="radio"
+                                name="5"
+                                value="following situations"
+                                required
+                            >
+
+                            <span class="option-text">following situations</span>
+
+                        </label>
+
+                        
+
+                    </div>
+
+                
+
+            </div>
+
+            
+
+            <button
+                type="submit"
+                class="button custom-btn is-medium is-fullwidth has-text-weight-bold mt-5"
+            >
+                <span>Submit Answers &amp; View Result</span>
+                <span class="icon ml-2">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </span>
+            </button>
+
+        </form>
+
+
+        
+
+    </div>
+
+</body>
+
+</html>
